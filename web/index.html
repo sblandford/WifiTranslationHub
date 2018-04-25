@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Translation Web Client</title>
+        <link rel="stylesheet" type="text/css" href="css/main.css">
+        <script src="js/lang.js"></script>
+        <script src="js/player.js"></script>
+    </head>
+    <body>
+
+    <div class="page">
+        <table class="ui">
+            <tbody>
+                <tr class="ui"><td class="ui">
+                    <div class="ui dropdown">
+                        <button onclick="chSelect();" class="ui dropbtn" id="chSelectBtn">Select</button>
+                        <div id="chSelectList" class="dropdown-content">
+                        </div>
+                    </div>
+                <tr class="ui"><td class="ui">
+                    <div class="ui chName" id="chName">....</div>
+                </td></tr>
+                <tr class="ui stat"><td class="ui">
+                    <div class="ui stat" id="stat">
+                    ----
+                    </div>
+                </td></tr>
+                <tr class="ui"><td class="ui">
+                    <div class="ui">
+                        <button onclick="startStopPlayerClick();" ontouchend="startStopPlayerTouchend();" class="ui startStopBtn" id="startStopButton">Start</button>
+                    </div>
+                </td></tr>
+            </tbody>
+        </table>
+
+        <div class="qrDiv">
+            <button class="qrBtn" id="qrBtn" onclick="showQr();">QR</button>
+        </div>
+        <div id="qrBox" class="qrBox">
+            <object id="qrObj" class="qrObj" type="text/html" data="/qr/index.html" ></object>
+        </div>        
+        <div id="appDiv" class="appDiv">
+            <button class="appBtn" id="appBtn" onclick="window.location = gAppUrl;"></button>
+        </div>
+    </div>
+</body>
+</html>
