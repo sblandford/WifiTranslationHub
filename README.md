@@ -19,14 +19,14 @@ The http system of sending the audio is designed to be cache-friendly to reduce 
 
 ### What is done so far
 
-# RTSP relay (although it doesn't currently have a use)
-# HTTP relay
+1) RTSP relay (although it doesn't currently have a use)
+2) HTTP relay
 
 ### What is to do
 
-# Admin interface and full back end
-# WAN security
-# Transmit locking
+1) Admin interface and full back end
+2) WAN security
+3) Transmit locking
 
 ## How to use
 
