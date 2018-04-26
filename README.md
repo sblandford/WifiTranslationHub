@@ -32,4 +32,4 @@ The http system of sending the audio is designed to be cache-friendly to reduce 
 
 Run wifitranslationhub.py on the same LAN as the WifiTranslation multicast.
 
-Access the IP address of the host from a phone web browser to get the relay.
+Access the IP address of the host on port 8080 from a phone web browser to get the relay.
