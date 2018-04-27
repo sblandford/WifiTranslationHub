@@ -18,12 +18,14 @@ import BackEnd
 threads = {}
 clientDictionary = {}
 privChannelDict = {}
+privChannelDict['channels'] = {}
 lock = threading.Lock()
 ended = False
 
 def addRtspClient(clientInfo):
     global channelDict
     global clientDictionary
+    global privChannelDict
     # Add client
     if not 'sessionId' in clientInfo:
         logging.error("Attempt to add client with no sessionId")
@@ -33,10 +35,10 @@ def addRtspClient(clientInfo):
     if channel >= config.MAX_CHANNELS:
         logging.error("Attempt to request channel %d above max channel %d", channel, config.MAX_CHANNELS)
         return
-    with privChannelDict[channel]['lock']:
+    with privChannelDict['channels'][channel]['lock']:
         clientDictionary[sessionId] = clientInfo
         # Assign client to channel list
-        channelDict[channel]['rtspSessions'].append(sessionId)
+        channelDict['channels'][channel]['rtspSessions'].append(sessionId)
     logging.debug("Added RTSP client with sessionId : %s", sessionId)
 
 def removeRtspClient(sessionId):
@@ -55,16 +57,16 @@ def removeRtspClient(sessionId):
             clientInfo['rtpOutSocket'].close()
         with lock:
             del clientDictionary[sessionId]
-        with privChannelDict[channel]['lock']:
-             channelDict[channel]['rtspSessions'].remove(sessionId)
+        with privChannelDict['channels'][channel]['lock']:
+             channelDict['channels'][channel]['rtspSessions'].remove(sessionId)
         logging.debug("Removed RTSP client with sessionId : %s", sessionId)
 
 def removeAllClients(channel):
     global channelDict
     logging.debug("Removing all RTSP clients of channel : %d", channel)
-    with privChannelDict[channel]['lock']:
-        rtspSessions = list(channelDict[channel]['rtspSessions'])
-        httpSessions = list(channelDict[channel]['httpSessions'])
+    with privChannelDict['channels'][channel]['lock']:
+        rtspSessions = list(channelDict['channels'][channel]['rtspSessions'])
+        httpSessions = list(channelDict['channels'][channel]['httpSessions'])
     for sessionId in rtspSessions:
         removeRtspClient(sessionId)
     for uuid in httpSessions:
@@ -86,10 +88,10 @@ def addHttpClientIfNot(clientInfo):
     #Do nothing if already registered unless a channel change
     channelChanged = False
     foundUuid = False
-    with privChannelDict[channel]['lock']:
+    with privChannelDict['channels'][channel]['lock']:
         if uuid in clientDictionary:
             foundUuid = True
-            if not uuid in channelDict[channel]['httpSessions']:
+            if not uuid in channelDict['channels'][channel]['httpSessions']:
                 channelChanged = True
     if channelChanged:
         logging.debug("Detected channel change for uuid : %s", uuid)
@@ -100,9 +102,9 @@ def addHttpClientIfNot(clientInfo):
     with lock:
         clientDictionary[uuid] = clientInfo
         clientDictionary[uuid]['thread'] = threading.Thread(target=timeHttpClient, args=(uuid,))
-    with privChannelDict[channel]['lock']:
+    with privChannelDict['channels'][channel]['lock']:
         # Assign client to channel list
-        channelDict[channel]['httpSessions'].append(uuid)
+        channelDict['channels'][channel]['httpSessions'].append(uuid)
     clientDictionary[uuid]['thread'].start()
     logging.debug("Added HTTP client with UUID : %s", uuid)
 
@@ -119,8 +121,8 @@ def removeHttpClient(uuid):
     if channel >= 0:
         with lock:
             del clientDictionary[uuid]
-        with privChannelDict[channel]['lock']:
-            channelDict[channel]['httpSessions'].remove(uuid)
+        with privChannelDict['channels'][channel]['lock']:
+            channelDict['channels'][channel]['httpSessions'].remove(uuid)
         logging.debug("Removed HTTP client with sessionId : %s", uuid)
 
 def clientInfoFromUuid(uuid):
@@ -154,6 +156,7 @@ def timeHttpClient(uuid):
 
 #Wait for RTP packet and return it
 def getHttpRtpPacketSeq(channel, seq):
+    global privChannelDict
     #Can't return old packet
     if seq < getSeq(channel):
         return False
@@ -161,20 +164,20 @@ def getHttpRtpPacketSeq(channel, seq):
     if seq > getSeq(channel) + config.HTTP_MAX_SEQ_AHEAD:
         return False
     #Wait until requested seq arrives
-    if not 'newPacketLock' in privChannelDict[channel]:
+    if not 'newPacketLock' in privChannelDict['channels'][channel]:
         return False
     while seq > getSeq(channel):
-        with privChannelDict[channel]['newPacketLock']:
+        with privChannelDict['channels'][channel]['newPacketLock']:
             try:
-                privChannelDict[channel]['newPacketLock'].wait()
+                privChannelDict['channels'][channel]['newPacketLock'].wait()
             except KeyboardInterrupt:
                 return False
     #Probably expired waiting
     if seq != getSeq(channel):
         return False
     #We have our packet
-    with privChannelDict[channel]['rtpLock']:
-        return privChannelDict[channel]['rtpPacket']
+    with privChannelDict['channels'][channel]['rtpLock']:
+        return privChannelDict['channels'][channel]['rtpPacket']
 
 def runChannel(channel):
     global threads
@@ -184,16 +187,16 @@ def runChannel(channel):
 
 
     logging.debug("Starting channel : %d", channel)
-    channelDict[channel]['status'] = False
-    channelDict[channel]['rtspSessions'] = []
-    channelDict[channel]['httpSessions'] = []
-    if not channel in privChannelDict:
-        privChannelDict[channel] = {}
-    privChannelDict[channel]['ended'] = False
+    channelDict['channels'][channel]['status'] = False
+    channelDict['channels'][channel]['rtspSessions'] = []
+    channelDict['channels'][channel]['httpSessions'] = []
+    if not channel in privChannelDict['channels']:
+        privChannelDict['channels'][channel] = {}
+    privChannelDict['channels'][channel]['ended'] = False
 
-    privChannelDict[channel]['lock'] = threading.Lock()
-    privChannelDict[channel]['rtpLock'] = threading.Lock()
-    privChannelDict[channel]['newPacketLock'] = threading.Condition()
+    privChannelDict['channels'][channel]['lock'] = threading.Lock()
+    privChannelDict['channels'][channel]['rtpLock'] = threading.Lock()
+    privChannelDict['channels'][channel]['newPacketLock'] = threading.Condition()
     thread = threading.Thread(target=reflectRTP, args=(channel,))
     threads[channel] = thread
     thread.start()
@@ -202,7 +205,7 @@ def stopChannel(channel):
     global privChannelDict
     logging.info("Stopping channel %d", channel)
     removeAllClients(channel)
-    privChannelDict[channel]['ended'] = True
+    privChannelDict['channels'][channel]['ended'] = True
 
 def waitChannel(channel):
     logging.debug("Waiting for channel %d", channel)
@@ -239,17 +242,17 @@ def waitAll():
 
 def getSeq(channel):
     global privChannelDict
-    with privChannelDict[channel]['lock']:
-        if channel in privChannelDict and 'seq' in privChannelDict[channel]:
-            return privChannelDict[channel]['seq']
+    with privChannelDict['channels'][channel]['lock']:
+        if channel in privChannelDict and 'seq' in privChannelDict['channels'][channel]:
+            return privChannelDict['channels'][channel]['seq']
         else:
             return 0
 
 def getTimeStamp(channel):
     global privChannelDict
-    with privChannelDict[channel]['lock']:
-        if channel in privChannelDict and 'timeStamp' in privChannelDict[channel]:
-            return privChannelDict[channel]['timeStamp']
+    with privChannelDict['channels'][channel]['lock']:
+        if channel in privChannelDict and 'timeStamp' in privChannelDict['channels'][channel]:
+            return privChannelDict['channels'][channel]['timeStamp']
         else:
             return 0
 
@@ -304,7 +307,7 @@ def reflectRTP(channel):
     mreq = struct.pack("4sL", group, socket.INADDR_ANY)
     # TODO Trap network error here
     reported = False
-    while not privChannelDict[channel]['ended']:
+    while not privChannelDict['channels'][channel]['ended']:
         try:
             sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
         except:
@@ -317,7 +320,7 @@ def reflectRTP(channel):
             break
     sock.settimeout(config.SOCKET_TIMEOUT)
     logging.debug("Waiting for multicast packets on channel %d, address %s", channel, str(ip_address))
-    while not privChannelDict[channel]['ended']:
+    while not privChannelDict['channels'][channel]['ended']:
         timeout = False
         try:
             data, address = sock.recvfrom(config.MULTICAST_PACKET_BUFFER_SIZE)
@@ -325,37 +328,37 @@ def reflectRTP(channel):
             timeout = True
         if timeout:
             logging.debug("Timeout on channel %s", channel)
-            with privChannelDict[channel]['lock']:
-                channelDict[channel]['status'] = False
-            with privChannelDict[channel]['newPacketLock']:
-                privChannelDict[channel]['newPacketLock'].notify_all()
+            with privChannelDict['channels'][channel]['lock']:
+                channelDict['channels'][channel]['status'] = False
+            with privChannelDict['channels'][channel]['newPacketLock']:
+                privChannelDict['channels'][channel]['newPacketLock'].notify_all()
             continue
         else:
-            with privChannelDict[channel]['rtpLock']:
-                privChannelDict[channel]['rtpPacket'] = data
+            with privChannelDict['channels'][channel]['rtpLock']:
+                privChannelDict['channels'][channel]['rtpPacket'] = data
         if not amrPacket(data):
             logging.debug("received %d bytes of invalid data on channel %d from %s", len(data), channel, address)
-            with privChannelDict[channel]['lock']:
-                channelDict[channel]['status'] = False
+            with privChannelDict['channels'][channel]['lock']:
+                channelDict['channels'][channel]['status'] = False
             continue
         seq = (data[2] << 8) + data[3]
         timeStamp = (data[4] << 24) + (data[5] << 16) + (data[6] << 8) + data[7]
 
 
         if seq > seqPrev:
-            with privChannelDict[channel]['lock']:
-                privChannelDict[channel]['seq'] = seq
-                privChannelDict[channel]['timeStamp'] = timeStamp
-                privChannelDict[channel]['rtpPacket'] = data
-                channelDict[channel]['status'] = True
+            with privChannelDict['channels'][channel]['lock']:
+                privChannelDict['channels'][channel]['seq'] = seq
+                privChannelDict['channels'][channel]['timeStamp'] = timeStamp
+                privChannelDict['channels'][channel]['rtpPacket'] = data
+                channelDict['channels'][channel]['status'] = True
         logging.debug("received %d bytes on channel %d from %s with seq %d and timestamp %d", len(data), channel,
                       address, seq, timeStamp)
-        with privChannelDict[channel]['newPacketLock']:
-            privChannelDict[channel]['newPacketLock'].notify_all()
+        with privChannelDict['channels'][channel]['newPacketLock']:
+            privChannelDict['channels'][channel]['newPacketLock'].notify_all()
 
         #Process RTP client
-        with privChannelDict[channel]['lock']:
-            rtspSessions = list(channelDict[channel]['rtspSessions'])
+        with privChannelDict['channels'][channel]['lock']:
+            rtspSessions = list(channelDict['channels'][channel]['rtspSessions'])
         for sessionId in rtspSessions:
             with lock:
                 clientInfo = clientDictionary[sessionId]
@@ -388,11 +391,11 @@ def shortStatWorker():
         for i in range(0, config.MAX_CHANNELS):
             if not i in channelStatDict:
                 channelStatDict[i] = {}
-            with privChannelDict[i]['lock']:
+            with privChannelDict['channels'][i]['lock']:
                 if not i in channelStatDict:
                     channelStatDict[i] = {}
-                if "status" in channelDict[i]:
-                    channelStatDict[i]["status"] = channelDict[i]["status"]
-                if "name" in channelDict[i]:
-                    channelStatDict[i]["name"] = channelDict[i]["name"]
+                if "status" in channelDict['channels'][i]:
+                    channelStatDict[i]["status"] = channelDict['channels'][i]["status"]
+                if "name" in channelDict['channels'][i]:
+                    channelStatDict[i]["name"] = channelDict['channels'][i]["name"]
         time.sleep(1)

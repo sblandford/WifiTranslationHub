@@ -42,6 +42,7 @@ open=XX<+/->, where XX is the channel number, open or close channel to allow new
 def respond(path, params, fullPath):
     global channelDict
     global channelStatDict
+    global privChannelDict
 
     callback = "parseResponse"
     cacheSeconds = -1
@@ -76,8 +77,12 @@ def respond(path, params, fullPath):
                         logging.warning(problem)
                     else:
                         chName = params['chname'][2:]
-                        with privChannelDict[channel]['lock']:
-                            channelDict[channel]['name'] = chName
+                        with privChannelDict['channels'][channel]['lock']:
+                            if chName != "":
+                                channelDict['channels'][channel]['name'] = chName
+                            else:
+                                if 'name' in channelDict['channels'][channel]:
+                                    del channelDict['channels'][channel]['name']
                 else:
                     code = 400
                     problem = "chname parameter must by two decimal digits followed by name, got " + params['chname']
@@ -102,11 +107,11 @@ def respond(path, params, fullPath):
                         code = 400
                         problem = "id too short : " + id
                     if params['id'][2:3] == "+":
-                        if not id in channelDict[channel]['allowedIds']:
-                            channelDict[channel]['allowedIds'].append(id)
+                        if not id in channelDict['channels'][channel]['allowedIds']:
+                            channelDict['channels'][channel]['allowedIds'].append(id)
                     elif params['id'][2:3] == "-":
-                        if id in channelDict[channel]['allowedIds']:
-                            del channelDict[channel]['allowedIds'][id]
+                        if id in channelDict['channels'][channel]['allowedIds']:
+                            del channelDict['channels'][channel]['allowedIds'][id]
                     else:
                         code = 400
                         problem = "Expecting + or - after channel number"
@@ -116,26 +121,30 @@ def respond(path, params, fullPath):
                 else:
                     channelDict['mandatoryHeadphones'] = True
             if code == 200 and 'open' in params:
-                channel = int(params['open'][0:2])
-                if channel >= config.MAX_CHANNELS:
-                    code = 400
-                    problem = "open channel number too large, must be in range 00 to " + \
-                              format(config.MAX_CHANNELS - 1, '02d')
-                    logging.warning(problem)
-                else:
-                    if params['open'][2:3] == "+":
-                        channelDict[channel]['open'] = True
-                    elif params['open'][2:3] == "-":
-                        channelDict[channel]['open'] = False
-                    else:
+                if params['open'][0].isdigit() and params['open'][1].isdigit():
+                    channel = int(params['open'][0:2])
+                    if channel >= config.MAX_CHANNELS:
                         code = 400
-                        problem = "Expecting + or - after channel number"
+                        problem = "open channel number too large, must be in range 00 to " + \
+                                  format(config.MAX_CHANNELS - 1, '02d')
+                        logging.warning(problem)
+                    else:
+                        if params['open'][2:3] == "+":
+                            channelDict['channels'][channel]['open'] = True
+                        elif params['open'][2:3] == "-":
+                            channelDict['channels'][channel]['open'] = False
+                        else:
+                            code = 400
+                            problem = "Expecting + or - after channel number"
+                            logging.warning(problem)
+                else:
+                    code = 400
+                    problem = "chname parameter must by two decimal digits followed by name, got " + params['chname']
+                    logging.warning(problem)
 
         if code == 200:
             content = json.dumps(
-                {
-                    'channels': channelDict
-                }
+                    channelDict
             )
             #Remove the admin password from the response
             content = re.sub(r',\s"adminPassword[^,}]+', '', content)
@@ -146,9 +155,7 @@ def respond(path, params, fullPath):
         problem = ''
         logging.debug("Short status requested")
         content = json.dumps(
-            {
-                'channels': channelStatDict
-            }
+                channelStatDict
         )
     else:
         content = ""

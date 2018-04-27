@@ -74,59 +74,63 @@ function pollStatus () {
 }
 
 function updateDisplay() {
-    if (gStatus.hasOwnProperty("channels")) {
-        var channels = gStatus["channels"];
-        var listHtml = '';
-        for (var channel in channels) {
-            var status = false;
-            var name = (parseInt(channel) + 1).toString();
-            var customName = false;
-            
-            if (channels[channel].hasOwnProperty("status")) {
-                status = channels[channel]["status"];
-            }
-            if (channels[channel].hasOwnProperty("name")) {
-                name = channels[channel]["name"];
-                customName = true;
-            }
-            if (!customName) {
-                name = LANG[gLang]["channel"] + " " + ((parseInt(channel) < 9)?"0":"") + name;
-            }            
-            if (status || (channel == 0) || (customName)) {
+    var listHtml = '';
+    for (var channel in gStatus) {
+        if (!isNormalInteger(channel)) {
+            continue;
+        }
+        var status = false;
+        var name = (parseInt(channel) + 1).toString();
+        var customName = false;
+        
+        if (gStatus[channel].hasOwnProperty("status")) {
+            status = gStatus[channel]['status'];
+        }
+        if (gStatus[channel].hasOwnProperty("name")) {
+            name = gStatus[channel]["name"];
+            customName = true;
+        }
+        if (!customName) {
+            name = LANG[gLang]["channel"] + " " + ((parseInt(channel) < 9)?"0":"") + name;
+        }            
+        if (status || (channel == 0) || (customName)) {
 
-                if (status) {
-                    listHtml += "<a href=\"#\"" +
-                    " onclick=\"onclickChannel(" + channel + ");\"" +
-                    " ontouchend=\"ontouchendChannel(" + channel + ");\"" +
-                    ">" + name + "</a>\n";
-                } else {
-                    listHtml += "<a href=\"#\" class=\"disabled\">" + name + "</a>\n";
-                }
-            }
-            if (parseInt(channel) == parseInt(localStorage.channel)) {
-                var chNameId = document.getElementById("chName");
-                var startStopButtonId = document.getElementById("startStopButton");
-                chNameId.innerHTML = name;
-                if (status) {
-                    if (chNameId.classList.contains('chNameDead')) {
-                        chNameId.classList.remove('chNameDead');
-                    }
-                    startStopButtonId.innerText = LANG[gLang][(gPlaying)?"stop":"start"];
-                    startStopButtonId.disabled = false;
-                    
-                } else {
-                    if (!chNameId.classList.contains('chNameDead')) {
-                        chNameId.classList.add('chNameDead');
-                    }
-                    startStopButtonId.innerText = (gPlaying)?LANG[gLang]["stop"]:"-";
-                    startStopButtonId.disabled = !gPlaying;
-                }
+            if (status) {
+                listHtml += "<a href=\"#\"" +
+                " onclick=\"onclickChannel(" + channel + ");\"" +
+                " ontouchend=\"ontouchendChannel(" + channel + ");\"" +
+                ">" + name + "</a>\n";
+            } else {
+                listHtml += "<a href=\"#\" class=\"disabled\">" + name + "</a>\n";
             }
         }
-        var element = document.getElementById("chSelectList");
-        element.innerHTML = listHtml;
+        if (parseInt(channel) == parseInt(localStorage.channel)) {
+            var chNameId = document.getElementById("chName");
+            var startStopButtonId = document.getElementById("startStopButton");
+            chNameId.innerHTML = name;
+            if (status) {
+                if (chNameId.classList.contains('chNameDead')) {
+                    chNameId.classList.remove('chNameDead');
+                }
+                startStopButtonId.innerText = LANG[gLang][(gPlaying)?"stop":"start"];
+                startStopButtonId.disabled = false;
+                
+            } else {
+                if (!chNameId.classList.contains('chNameDead')) {
+                    chNameId.classList.add('chNameDead');
+                }
+                startStopButtonId.innerText = (gPlaying)?LANG[gLang]["stop"]:"-";
+                startStopButtonId.disabled = !gPlaying;
+            }
+        }
     }
+    var element = document.getElementById("chSelectList");
+    element.innerHTML = listHtml;
     document.getElementById("chSelectBtn").innerText = LANG[gLang]["select"];
+}
+
+function isNormalInteger(str) {
+    return /^\+?(0|[1-9]\d*)$/.test(str);
 }
 
 
