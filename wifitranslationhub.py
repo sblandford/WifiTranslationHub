@@ -3,9 +3,11 @@
 __author__ = "Simon Blandford"
 
 import config
-import configparser
-import os
+import copy
+import json
 import logging
+import pickle
+import os
 import re
 import signal
 import sys
@@ -59,9 +61,7 @@ def main():
     appDataFile = appData()
     logging.info("Using application data file : %s", appDataFile)
 
-    for i in range(0, config.MAX_CHANNELS):
-        channelDict[i] = {}
-
+    defaultConfig()
     fetchConfig(appDataFile)
 
     configThread = threading.Thread(target=updateConfig, args=(appDataFile,))
@@ -129,62 +129,39 @@ def appData():
         except:
             logging.error("Unable to create missing directory for config storage : %s", path)
             raise()
-    appdata = re.compile("py$").sub("", appdata) + "conf"
+    appdata = re.compile("py$").sub("", appdata) + "pickle"
     return appdata
 
 def fetchConfig (appdata):
     global channelDict
-    global configObj
 
-    configObj = configparser.ConfigParser()
     if os.path.exists(appdata):
-        configObj.read(appdata)
+        with open(appdata, "rb") as f:
+            channelDict = pickle.load(f)
+    else:
+        defaultConfig()
 
-    if not 'common' in configObj.sections():
-        configObj.add_section('common')
-    channelDict['mandatoryHeadphones'] = configObj['common'].getboolean('mandatoryHeadphones', fallback=False)
-    channelDict['adminPassword'] = configObj.getboolean('common', 'adminPassword', fallback=config.DEFAULT_ADMIN_PASSWORD)
 
+def defaultConfig():
+    global channelDict
+
+    channelDict['adminPassword'] = config.DEFAULT_ADMIN_PASSWORD;
+    channelDict['channels'] = {}
     for i in range(0, config.MAX_CHANNELS):
-        if not str(i) in configObj.sections():
-            configObj.add_section(str(i))
-
-        if configObj.get(str(i), 'name', fallback='') != '':
-            channelDict[i]['name'] = configObj.get(str(i), 'name')
-        channelDict[i]['allowedIds'] = configObj.get(str(i), 'allowedIds', fallback=[])
+        channelDict['channels'][i] = {}
 
 def updateConfig(appdata):
-    global configObj
+    global channelDict
 
     logging.info("Starting config thread")
-    changed = False
+    prevChannelDict = {}
     while not ended:
-
-        if channelDict['mandatoryHeadphones'] != configObj.getboolean('common', 'mandatoryHeadphones', fallback=False):
-            configObj.set('common', 'mandatoryHeadphones', str(channelDict['mandatoryHeadphones']))
-            changed = True
-
-        if channelDict['adminPassword'] != configObj.getboolean('common', 'adminPassword', fallback=config.DEFAULT_ADMIN_PASSWORD):
-            configObj.set('common', 'adminPassword', str(channelDict['adminPassword']))
-            changed = True
-
-        for i in range(0, config.MAX_CHANNELS):
-            if 'name' in channelDict[i] and channelDict[i]['name'] != configObj.get(str(i), 'name', fallback=''):
-                configObj.set(str(i), 'name', channelDict[i]['name'])
-                changed = True
-            if 'allowedIds' in channelDict[i] and channelDict[i]['allowedIds'] != configObj.get(str(i), 'allowedIds', fallback=[]):
-                configObj.set(str(i), 'allowedIds', channelDict[i]['allowedIds'])
-                changed = True
-
-        if changed:
-            logging.debug("Updating %s", appdata)
-            with open(appdata, 'w') as configfile:
-                configObj.write(configfile)
-                configfile.close()
-        changed = False
+        if json.dumps(channelDict) != json.dumps(prevChannelDict):
+            with open(appdata, "wb") as f:
+                pickle.dump(channelDict, f, pickle.HIGHEST_PROTOCOL)
+            prevChannelDict = copy.deepcopy(channelDict)
 
         time.sleep(config.CONFIG_UPDATE_SECONDS)
-
 
 
 # Program Start Point

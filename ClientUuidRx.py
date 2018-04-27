@@ -50,8 +50,8 @@ def startAll(channelDictIn, channelStatDictIn):
     BackEnd.setupUuid(channelDict, channelStatDict)
     logging.info("Starting all UUID channel threads")
     for i in range(0, config.MAX_CHANNELS):
-        channelDict[i]['rx'] = {}
-        channelDict[i]['tx'] = {}
+        channelDict['channels'][i]['rx'] = {}
+        channelDict['channels'][i]['tx'] = {}
         ended[i] = False
         runChannel(i)
     timeoutThread = threading.Thread(target=timeoutUuids)
@@ -117,15 +117,15 @@ def listenUuid(channel):
         if data[1] != ord('X'):
             continue
         if data[0] == ord('T'):
-            if not uuid in channelDict[channel]['tx']:
+            if not uuid in channelDict['channels'][channel]['tx']:
                 logging.debug("Adding client TX UUID : %s", uuid)
             with lock[channel]:
-                channelDict[channel]['tx'][uuid] = time.time()
+                channelDict['channels'][channel]['tx'][uuid] = time.time()
         elif data[0] != ord('R'):
-            if not uuid in channelDict[channel]['rx']:
+            if not uuid in channelDict['channels'][channel]['rx']:
                 logging.debug("Adding client RX UUID : %s", uuid)
             with lock[channel]:
-                channelDict[channel]['rx'][uuid] = time.time()
+                channelDict['channels'][channel]['rx'][uuid] = time.time()
     sock.close()
 
 def timeoutUuids():
@@ -134,20 +134,20 @@ def timeoutUuids():
         for channel in range(0, config.MAX_CHANNELS):
             txDeletes = []
             rxDeletes = []
-            for uuid in channelDict[channel]['tx']:
-                if (time.time() - channelDict[channel]['tx'][uuid]) > config.UUID_TIMEOUT_SECONDS:
+            for uuid in channelDict['channels'][channel]['tx']:
+                if (time.time() - channelDict['channels'][channel]['tx'][uuid]) > config.UUID_TIMEOUT_SECONDS:
                     txDeletes.append(uuid)
-            for uuid in channelDict[channel]['rx']:
-                if (time.time() - channelDict[channel]['rx'][uuid]) > config.UUID_TIMEOUT_SECONDS:
+            for uuid in channelDict['channels'][channel]['rx']:
+                if (time.time() - channelDict['channels'][channel]['rx'][uuid]) > config.UUID_TIMEOUT_SECONDS:
                     rxDeletes.append(uuid)
             with lock[channel]:
                 for uuid in txDeletes:
-                    if uuid in channelDict[channel]['tx']:
+                    if uuid in channelDict['channels'][channel]['tx']:
                         logging.debug("Timeout of client TX UUID : %s", uuid)
-                        del channelDict[channel]['tx'][uuid]
+                        del channelDict['channels'][channel]['tx'][uuid]
                 for uuid in rxDeletes:
-                    if uuid in channelDict[channel]['rx']:
+                    if uuid in channelDict['channels'][channel]['rx']:
                         logging.debug("Timeout of client RX UUID : %s", uuid)
-                        del channelDict[channel]['rx'][uuid]
+                        del channelDict['channels'][channel]['rx'][uuid]
         time.sleep(1)
 
