@@ -50,7 +50,7 @@ function pollStatus () {
         "/json/admin.json",
         function(newStatus) {
             if (JSON.stringify(gStatus) !== JSON.stringify(newStatus)) {          
-                console.log(newStatus);
+                //console.log(newStatus);
                 gStatus = newStatus;
                 gStatusUpdate = true;
             }
@@ -68,7 +68,7 @@ function sendCommand (command, value) {
         "/json/admin.json" + "?" + command + "=" + encodeURIComponent(value),
         function(newStatus) {
             if (JSON.stringify(gStatus) !== JSON.stringify(newStatus)) {          
-                console.log(newStatus);
+                //console.log(newStatus);
                 gStatus = newStatus;
                 gStatusUpdate = true;
             }
@@ -91,7 +91,7 @@ function channelTable () {
                 statusField(newRow, channel);
                 openField(newRow, channel);
                 
-                console.log(gStatus['channels'][channel])
+                //console.log(gStatus['channels'][channel])
             }
         }
         oldTbody.parentNode.replaceChild(newTbody,oldTbody);
@@ -136,7 +136,7 @@ function nameField (newRow, channel) {
             name = "";
         }
         sendCommand("chname", channelParamId + name);
-        console.log("chname:" + channelParamId + name);
+        //console.log("chname:" + channelParamId + name);
     }
     newRow.insertCell(-1).appendChild(nameInput);
 }
@@ -201,6 +201,6 @@ if (!localStorage.adminPassword) {
 }
 
 window.onload = function () {
-    //updateDisplay();
+    pollStatus();
     setInterval(pollStatus, 2000);
 }
