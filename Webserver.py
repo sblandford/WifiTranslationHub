@@ -120,7 +120,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             elif "/sdp/" in path:
                 # Assume multicast SDP file request
                 contentType = "application/sdp"
-                binContent = bytearray(RTSPServerSession.genSdp(False, ip), "utf8")
+                binContent = bytearray(RTSPServerSession.genSdp(False, ip, channel), "utf8")
                 self._respond(contentType, binContent, config.HTTP_SDP_CACHE_SECONDS)
             return
 
