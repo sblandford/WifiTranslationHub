@@ -99,7 +99,7 @@ class HubServerSession:
                             r += "Public: DESCRIBE,SETUP,TEARDOWN,PLAY\r\n\r\n"
                         elif requestCommand.upper() == "DESCRIBE":
 
-                            content = genSdp(True, "0.0.0.0")
+                            content = genSdp(True, "0.0.0.0", channel)
 
                             r = "RTSP/1.0 200 OK\r\n"
                             r += "Cseq: " + str(seq) + "\r\n"
@@ -225,7 +225,7 @@ class HubServerSession:
         return 'RTSP/1.0 400 BAD REQUEST\r\n\r\n'
 
 
-def genSdp(unicast, mCastIp):
+def genSdp(unicast, mCastIp, channel):
     audioPort = config.MULTICAST_PORT
     if unicast:
         audioPort = 0
@@ -237,7 +237,7 @@ def genSdp(unicast, mCastIp):
     content += "a=type:broadcast\r\n"
     content += "a=charset:UTF-8\r\n"
     content += "m=audio " + str(audioPort) + " RTP/AVP 97\r\n"
-    content += "b=AS:14\r\n"
+    content += "b=AS:" + str(MulticastRxUniTx.getKbps(channel)) + "\r\n"
     content += "a=rtpmap:97 AMR-WB/16000/1\r\n"
     content += "a=fmtp:97 octet-align=1\r\n"
 
@@ -255,12 +255,19 @@ def urlDecode(url):
     #Remove double forward slashes and split by forward slash
     pathSplit = re.sub("\/+","/",path).split("/")
     #Remove empty items e.g. resulting for first forward slash
-    pathSplit.remove("")
-    #Do we have a channel (two digit code)
-    if len(pathSplit) > 1 and re.search("^[0-9][0-9]$", pathSplit[1]):
-        channelText = pathSplit[1]
-        pathSplit.remove(channelText)
-        channel = int(channelText)
+    if "" in pathSplit:
+        pathSplit.remove("")
+    #Remove protocol and host if RTSP (http server already removes this)
+    if "rtsp:" in pathSplit:
+        pathSplit.remove("rtsp:")
+        pathSplit.remove(pathSplit[0])
+    #Do we have a channel (two digit code)?
+    for i in range(0,2):
+        if len(pathSplit) > i and re.search("^[0-9][0-9]$", pathSplit[i]):
+            channelText = pathSplit[i]
+            pathSplit.remove(channelText)
+            channel = int(channelText)
+            break
     #Do we have a sequence number (one or more number of digits)
     if len(pathSplit) > 1 and re.search("^[0-9]+$", pathSplit[1]):
         seqText = pathSplit[1]

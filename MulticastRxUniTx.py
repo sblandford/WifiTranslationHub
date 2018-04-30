@@ -179,6 +179,12 @@ def getHttpRtpPacketSeq(channel, seq):
     with privChannelDict['channels'][channel]['rtpLock']:
         return privChannelDict['channels'][channel]['rtpPacket']
 
+#Get rough integer kbps for SDP file creation
+def getKbps(channel):
+    if channel >= 0 and 'kbps' in channelDict['channels'][channel]:
+        return channelDict['channels'][channel]['kbps']
+    return 0
+
 def runChannel(channel):
     global threads
     global channelDict
@@ -284,9 +290,17 @@ def openTxPorts(clientInfo):
         break
     return (sock0, port0, sock1, port1)
 
+#Quick check that data packet is and RTP/AMR packet
 def amrPacket(data):
     return len(data) > config.RTP_HEADER_SIZE and (data[1] & 0x7F) == config.RTP_PAYLOAD_ID and data[
         config.RTP_HEADER_SIZE] == config.RTP_TOC_HEADER
+
+#Find the kbps of the AMR data based on first AMR chunk or packet
+def amrKbps(data):
+    kbpsLookup = [6, 9, 13, 14, 16, 18, 20, 23, 24, 0, 0, 0, 0, 0, 0, 0]
+    tocHeader = data[config.RTP_HEADER_SIZE + 1]
+    frameIndex = (tocHeader >> 3) & 0x0F
+    return kbpsLookup[frameIndex]
 
 def reflectRTP(channel):
     global channelDict
@@ -344,12 +358,12 @@ def reflectRTP(channel):
         seq = (data[2] << 8) + data[3]
         timeStamp = (data[4] << 24) + (data[5] << 16) + (data[6] << 8) + data[7]
 
-
         if seq > seqPrev:
             with privChannelDict['channels'][channel]['lock']:
                 privChannelDict['channels'][channel]['seq'] = seq
                 privChannelDict['channels'][channel]['timeStamp'] = timeStamp
                 privChannelDict['channels'][channel]['rtpPacket'] = data
+                channelDict['channels'][channel]['kbps'] = amrKbps(data)
                 channelDict['channels'][channel]['status'] = True
         logging.debug("received %d bytes on channel %d from %s with seq %d and timestamp %d", len(data), channel,
                       address, seq, timeStamp)
