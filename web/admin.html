@@ -9,7 +9,25 @@
 </head>
 <body>
     <div class="page">
-        <div id="headphones"></div>
+        <div class="globalControls">
+            <table id="globalTable" class="globalControls">
+                <tbody>
+                    <tr>
+                        <td>
+                            <div id="headphones">
+                                <input type="checkbox" id="headphonesCheckbox" onclick="headphonesToggle();" />
+                                <label for="headphonesCheckbox">Mandate heaphones</label>
+                            </div>
+                        </td>
+                        <td>
+                            <div id="adminpw">
+                                <button id="adminPwButton" onclick="setAdminPw();">Set/change password</button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
         <div id="channelsDiv" class="channels">
             <table id="channelsTable" class="channels">
                 <thead>
@@ -36,5 +54,15 @@
         <div id="uuid-menu-enabled-disable" class="menu-item">Disable</div>
         <div id="uuid-menu-enabled-rename" class="menu-item">Rename</div>
     </div>
+    
+    <div id="pwModalBox" class="pwModal">
+        <!-- Modal content -->
+        <div class="pwModalContent">
+            <p>Enter admin password ...</p>
+            <input name="pwAdminInput" id="pwAdminInput" class="pwAdminTextBox" type="password" onchange="pwSet();"/>
+            <input name="pwAdminOk" class="pwAdminOk" type="submit" onclick="pwSet();"/>
+        </div>
+    </div>    
+    
 </body>
 </html>
