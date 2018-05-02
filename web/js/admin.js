@@ -113,6 +113,9 @@ function sendCommand (command, value) {
 }
 
 function updateDisplay () {
+    if (gEditing) {
+        return;
+    }
     if (gStatus.hasOwnProperty('mandatoryHeadphones')) {
         document.getElementById('headphonesCheckbox').checked = gStatus['mandatoryHeadphones'];
     }
@@ -158,18 +161,20 @@ function nameField (newRow, channel) {
     nameInput.id = "nameBox" + channel;
     nameInput.value = name;
     nameInput.setAttribute('readonly', true);
-    nameInput.onblur = function() {
+    nameInput.onblur = function(e) {
         if (gDoubletapTimer) {
             clearTimeout(gDoubletapTimer);
             gDoubletapTimer = null;
         }
-        this.setAttribute('readonly', true);
-        gEditing = false;
     };
     nameInput.onclick = function() {
         tap(this, function(thisPassed) {
             gEditing = true;
             thisPassed.removeAttribute('readonly');
+            setTimeout(function() {
+                //this.setAttribute('readonly', true);
+                gEditing = false;
+            }, 10000);
         });
     };
     nameInput.onkeyup = function() {
