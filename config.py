@@ -4,7 +4,7 @@ __author__ = "Simon Blandford"
 
 import logging
 
-LOG_LEVEL = logging.DEBUG
+LOG_LEVEL = logging.INFO
 
 THREAD_WAIT = 3.0
 

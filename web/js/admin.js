@@ -9,6 +9,11 @@ var gDoubletap1Function = null;
 var gDoubletap2Function = null;
 var gDoubletapTimer = null;
 
+var gMenuBox = null;
+var gMenuDisplayed = false;
+gMenuChannel = 0;
+var gMenuUuid = null;
+
 
 //JSONP loader by Gianni Chiappetta
 //https://gist.github.com/gf3/132080
@@ -49,7 +54,7 @@ function pollStatus () {
     loadJSONP(
         "/json/admin.json",
         function(newStatus) {
-            if (JSON.stringify(gStatus) !== JSON.stringify(newStatus)) {          
+            if (statCompare(gStatus, newStatus)) {
                 //console.log(newStatus);
                 gStatus = newStatus;
                 gStatusUpdate = true;
@@ -62,15 +67,35 @@ function pollStatus () {
     }
 }
 
+//Compare old and new status ignoring timestamps
+function statCompare (stat1, stat2) {
+    var statJson1 = JSON.stringify(stat1).replace(/:[0-9]{8,}\.[0-9]{5,}/,":0.0");
+    var statJson2 = JSON.stringify(stat2).replace(/:[0-9]{8,}\.[0-9]{5,}/,":0.0");
+    
+    return (statJson1 !== statJson2);
+}
+
 //Send command
 function sendCommand (command, value) {
+    var url = "/json/admin.json" + "?";
+    if (Array.isArray(command) && Array.isArray(value)) {
+        for (var i = 0; i < command.length; i++ ) {
+            if ( i > 0) {
+                url += "&";
+            }
+            url += command[i] + "=" + encodeURIComponent(value[i])
+        }
+    } else {
+        url += command + "=" + encodeURIComponent(value);
+    }
     loadJSONP(
-        "/json/admin.json" + "?" + command + "=" + encodeURIComponent(value),
+        url,
         function(newStatus) {
             if (JSON.stringify(gStatus) !== JSON.stringify(newStatus)) {          
                 //console.log(newStatus);
                 gStatus = newStatus;
                 gStatusUpdate = true;
+                channelTable ();
             }
         }
     );
@@ -90,6 +115,8 @@ function channelTable () {
                 nameField(newRow, channel);
                 statusField(newRow, channel);
                 openField(newRow, channel);
+                txField(newRow, channel);
+                countFields(newRow, channel);
                 
                 //console.log(gStatus['channels'][channel])
             }
@@ -142,10 +169,14 @@ function nameField (newRow, channel) {
 }
 
 function statusField (newRow, channel) {
+    var cell = newRow.insertCell(-1);
     if (gStatus['channels'][channel]['status']) {
-        newRow.insertCell(-1).className += " statusGood";
+        if (gStatus['channels'][channel].hasOwnProperty('kbps')) {
+            cell.innerHTML = gStatus['channels'][channel]['kbps'] + "kbps";
+        }
+        cell.className += " statusGood";
     } else {
-        newRow.insertCell(-1).className += " statusBad";
+        cell.className += " statusBad";
     }
 }
 
@@ -160,6 +191,95 @@ function openField (newRow, channel) {
         sendCommand("open", channelParamId + ((checkInput.checked)?"+":"-"));
     }
     newRow.insertCell(-1).appendChild(checkInput);
+}
+
+function txField (newRow, channel) {
+    var cell = newRow.insertCell(-1);
+    //Show currently transmitting UUIDs
+    for (var entry in gStatus['channels'][channel]['tx']) {
+        var txEntry = document.createElement('button');
+        var txText = document.createTextNode(friendlyName(entry));
+        txEntry.appendChild(txText);
+        txEntry.id = channel + "|" + entry;
+        if (gStatus['channels'][channel]['open']) {
+            if (gStatus['channels'][channel].hasOwnProperty('allowedIds') &&
+                (gStatus['channels'][channel]['allowedIds'].indexOf(entry) >= 0)) {
+                txEntry.className += " uuidButton uuidButtonEnabled";
+            } else {
+                txEntry.className += " uuidButton uuidButtonAvailable";
+            }
+        } else {
+            txEntry.className += " uuidButton uuidButtonClosed";
+            txEntry.disabled = true;
+        }
+        txEntry.addEventListener("contextmenu", rightClick, false);
+        cell.appendChild(txEntry);
+    }
+    //Show enabled but off-air UUIDs
+    if (gStatus['channels'][channel].hasOwnProperty('allowedIds')) {
+        for (var entry in gStatus['channels'][channel]['allowedIds']) {
+            var uuid = gStatus['channels'][channel]['allowedIds'][entry];
+            var txEntry = document.createElement('button');
+            var txText = document.createTextNode(friendlyName(uuid));
+            txEntry.appendChild(txText);
+            txEntry.id = channel + "|" + uuid;
+            if (!gStatus['channels'][channel].hasOwnProperty('tx') ||
+                !gStatus['channels'][channel]['tx'].hasOwnProperty(uuid)) {
+                txEntry.addEventListener("contextmenu", rightClick, false);
+                cell.appendChild(txEntry);
+                if (gStatus['channels'][channel]['open']) {
+                    txEntry.className += " uuidButton uuidButtonOff";
+                } else {
+                    txEntry.className += " uuidButton uuidButtonClosedOff";
+                    txEntry.disabled = true;
+                }
+            }
+        }
+    }
+}
+
+function countFields (newRow, channel) {
+    //Mutlicast count
+    var cell = newRow.insertCell(-1);
+    cell.className += " countDigits";
+    if (gStatus['channels'][channel].hasOwnProperty('rx')) {
+        cell.innerHTML = Object.keys(gStatus['channels'][channel]['rx']).length
+    } else {
+        cell.innerHTML = 0;
+    }
+    
+    //HTTP LAN count
+    cell = newRow.insertCell(-1);
+    cell.className += " countDigits";
+    if (gStatus['channels'][channel].hasOwnProperty('httpSessions')) {
+        cell.innerHTML = gStatus['channels'][channel]['httpSessions'].length
+    } else {
+        cell.innerHTML = 0;
+    }
+    
+    //HTTP WAN count (not implemented yet)
+    cell = newRow.insertCell(-1);
+    cell.className += " countDigits";
+    cell.innerHTML = "-";
+    
+    //RTSP count
+    cell = newRow.insertCell(-1);
+    cell.className += " countDigits";
+    if (gStatus['channels'][channel].hasOwnProperty('rtspSessions')) {
+        cell.innerHTML = gStatus['channels'][channel]['rtspSessions'].length
+    } else {
+        cell.innerHTML = 0;
+    }
+    
+}
+
+//Look up friendly name for uuid if it exists
+function friendlyName (uuid) {
+    var name = uuid;
+    if (gStatus.hasOwnProperty('friendlyNames') && gStatus['friendlyNames'].hasOwnProperty(uuid)) {
+        name = gStatus['friendlyNames'][uuid];
+    }
+    return name;
 }
 
 //Double-click that works with touch screens
@@ -196,6 +316,53 @@ function hashCode(s){
   return Math.abs(s.split("").reduce(function(a,b){a=((a<<5)-a)+b.charCodeAt(0);return a&a},0)).toString(16);
 }
 
+
+//Right-click handler
+function rightClick (e) {
+    var left = arguments[0].clientX;
+    var top = arguments[0].clientY;
+    
+    gMenuBox = window.document.querySelector(".uuid-menu-unselected");
+    gMenuUuid = e.target.id.split("|")[1];
+    
+    if (gStatus['channels'][gMenuChannel].hasOwnProperty('allowedIds') && (gStatus['channels'][gMenuChannel]['allowedIds'].indexOf(gMenuUuid) >= 0)) {
+        gMenuBox = window.document.querySelector(".uuid-menu-enabled");
+    }
+    
+    gMenuBox.style.left = left + "px";
+    gMenuBox.style.top = top + "px";
+    gMenuBox.style.display = "block";
+    
+    arguments[0].preventDefault();
+    
+    gMenuDisplayed = true;
+}
+window.addEventListener("click", function(e) {
+    e = e || window.event;
+    if(gMenuDisplayed == true){
+        var target = e.target || e.srcElement;
+        var text = target.id.match(/[^-]*$/)[0];
+        
+        switch (text) {
+            case "enable" :
+                sendCommand("id", chToParam(gMenuChannel) + "+" + gMenuUuid);
+                break;
+            case "disable" :
+                sendCommand("id", chToParam(gMenuChannel) + "-" + gMenuUuid);
+                break;
+            case "rename" :
+                var newName = prompt("Please enter new name", gMenuUuid);
+                sendCommand(["idrename", "name"], [gMenuUuid, newName]);
+                break;
+        }
+    
+        gMenuBox.style.display = "none"; 
+    }
+    gMenuDisplayed = false;
+}, true);    
+
+
+
 if (!localStorage.adminPassword) {
     localStorage.adminPassword = "admin";
 }
@@ -203,4 +370,6 @@ if (!localStorage.adminPassword) {
 window.onload = function () {
     pollStatus();
     setInterval(pollStatus, 2000);
+
+    
 }

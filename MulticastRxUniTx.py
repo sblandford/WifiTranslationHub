@@ -249,7 +249,7 @@ def waitAll():
 def getSeq(channel):
     global privChannelDict
     with privChannelDict['channels'][channel]['lock']:
-        if channel in privChannelDict and 'seq' in privChannelDict['channels'][channel]:
+        if 'seq' in privChannelDict['channels'][channel]:
             return privChannelDict['channels'][channel]['seq']
         else:
             return 0

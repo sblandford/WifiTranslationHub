@@ -9,12 +9,14 @@
 .channels table td:nth-child(2) {
     width: 4em;
     border: 1px solid grey;
+    text-align: center;
 }
 .channels table td:nth-child(3) {
     width: 2em;
 }
 .channels table td:nth-child(4) {
-    width: 8em;
+    width: 19em;
+    text-align: center;
 }
 
 .statusGood {
@@ -22,4 +24,71 @@
 }
 .statusBad {
     background-color: coral;
+}
+
+.uuidButton {
+  -webkit-border-radius: 0.7em;
+  -moz-border-radius: 0.7em;
+  border-radius: 0.7em;
+  font-family: "Courier New";
+  color: white;
+  font-size: 0.8em;
+  padding: 0.1em 0.1em 0.1em 0.1em;
+  text-decoration: none;    
+}
+.uuidButtonAvailable {
+  background: DodgerBlue;
+}
+.uuidButtonAvailable:hover {
+  background: DeepSkyBlue;
+}
+.uuidButtonEnabled {
+  background: Green;
+}
+.uuidButtonEnabled:hover {
+  background: LimeGreen;
+}
+.uuidButtonOff {
+  background: LightSteelBlue;
+}
+.uuidButtonOff:hover {
+  background: LightGray;
+}
+
+.uuidButtonClosed {
+  background: DarkCyan;
+}
+.uuidButtonClosedOff {
+  background: Gray;
+}
+
+
+.menu {
+    width: 10em;
+    background: GhostWhite;
+    box-shadow: 0.2em 0.3em 0.5em DimGray;
+    border-style: solid;
+    border-width: 0.1em;
+    border-color: grey;
+    border-radius: 0.2em;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+    padding-top: 0.3em;
+    padding-bottom: 0.3em;
+    position: fixed;
+    display: none;
+}
+
+.menu-item {
+    height: 1.5em;
+}
+
+.menu-item:hover {
+    background-color: LavenderBlush;
+    cursor: pointer;
+}
+
+.countDigits {
+    text-align: right;
+    padding-right: 1em;
 }
