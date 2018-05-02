@@ -124,7 +124,7 @@ def listenUuid(channel):
                 logging.debug("Adding client TX UUID : %s", uuid)
             with lock[channel]:
                 channelDict['channels'][channel]['tx'][uuid] = time.time()
-        elif data[0] != ord('R'):
+        elif data[0] == ord('R'):
             if not uuid in channelDict['channels'][channel]['rx']:
                 logging.debug("Adding client RX UUID : %s", uuid)
             with lock[channel]:

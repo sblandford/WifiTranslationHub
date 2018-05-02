@@ -86,9 +86,10 @@ fi
 setnum=0
 if echo "$1" | grep -Eq "^[0-2]$"; then
   setnum=$1
+  echo "Set number $setnum"
 fi
 
 for (( i=0; i<10; i++ )); do
-    send_audio $i $(( 432 + (i * 10) )) $(( i % 9 )) &>/dev/null &
+    send_audio $i $(( 432 + (i * 100) )) $(( i % 9 )) &>/dev/null &
     send_uuid $i $setnum &>/dev/null &
 done

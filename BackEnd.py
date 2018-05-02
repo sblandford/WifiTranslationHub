@@ -61,8 +61,10 @@ def respond(path, params, fullPath):
         fullPath = re.sub(r"&?hash=[^&]+", "", fullPath)
         hashCode = hash(fullPath + password)
         if not 'hash' in params or params['hash'] != hashCode:
-            code = 403
             problem = "Forbidden: incorrect or missing authorisation hash"
+            content = json.dumps(
+                {'problem': problem}
+            )
             logging.warning(problem)
         else:
             #Only consider commands if authentication checks out
@@ -90,6 +92,7 @@ def respond(path, params, fullPath):
             if code == 200 and 'adminpw' in params:
                 if len(params['adminpw']) >= config.ADMIN_PASSWORD_MIN_LENGTH:
                     channelDict['adminPassword'] = params['adminpw']
+                    logging.info("Password changed")
                 else:
                     code = 400
                     problem = "Password less than minimum acceptable length of " + str(config.ADMIN_PASSWORD_MIN_LENGTH) + " characters"
@@ -157,12 +160,12 @@ def respond(path, params, fullPath):
                     problem = "chname parameter must by two decimal digits followed by name, got " + params['chname']
                     logging.warning(problem)
 
-        if code == 200:
-            content = json.dumps(
-                    channelDict
-            )
-            #Remove the admin password from the response
-            content = re.sub(r',\s"adminPassword[^,}]+', '', content)
+            if code == 200:
+                content = json.dumps(
+                        channelDict
+                )
+                #Remove the admin password from the response
+                content = re.sub(r',\s"adminPassword[^,}]+', '', content)
     elif "json/stat.json" in path:
         code = 200
         cacheSeconds = config.HTTP_STAT_CACHE_SECONDS

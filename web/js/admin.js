@@ -2,6 +2,7 @@ var gStatus = {};
 var gStatusUpdate = false;
 var gLang = window.navigator.language.substring(0,2);
 var gEditing = false;
+var gSettingPw = false;
 
 
 var gDoubletapDeltaTime = 700;
@@ -29,8 +30,8 @@ var loadJSONP = (function(){
     var hash = hashCode(url + localStorage.adminPassword);
                  
     // Create script
-    var script = document.createElement('script');
-    script.type = 'text/javascript';
+    var script = document.createElement("script");
+    script.type = "text/javascript";
     script.src = url + "&hash=" + hash;
     
     // Setup handler
@@ -43,8 +44,10 @@ var loadJSONP = (function(){
     
     // Load JSON
     document.getElementsByTagName('head')[0].appendChild(script);
+ 
   };
 })();
+
 
 //Poll status every two seconds and update display if pending
 function pollStatus () {
@@ -54,15 +57,23 @@ function pollStatus () {
     loadJSONP(
         "/json/admin.json",
         function(newStatus) {
-            if (statCompare(gStatus, newStatus)) {
-                //console.log(newStatus);
-                gStatus = newStatus;
-                gStatusUpdate = true;
+            if (newStatus.hasOwnProperty('channels')) {
+            
+                if (statCompare(gStatus, newStatus)) {
+                    //console.log(newStatus);
+                    gStatus = newStatus;
+                    gStatusUpdate = true;
+                }
+            } else {
+                if (newStatus.hasOwnProperty('problem') && /^Forbidden/.test(newStatus['problem']) && !gSettingPw) {
+                    //Password is wrong
+                    setAdminPw();
+                }
             }
         }
     );
     if (gStatusUpdate) {
-        channelTable ();
+        updateDisplay ();
         gStatusUpdate = false;
     }
 }
@@ -95,10 +106,17 @@ function sendCommand (command, value) {
                 //console.log(newStatus);
                 gStatus = newStatus;
                 gStatusUpdate = true;
-                channelTable ();
+                updateDisplay ();
             }
         }
     );
+}
+
+function updateDisplay () {
+    if (gStatus.hasOwnProperty('mandatoryHeadphones')) {
+        document.getElementById('headphonesCheckbox').checked = gStatus['mandatoryHeadphones'];
+    }
+    channelTable();
 }
 
 function channelTable () {
@@ -362,14 +380,36 @@ window.addEventListener("click", function(e) {
 }, true);    
 
 
+function headphonesToggle() {
+    var hpState = document.getElementById('headphonesCheckbox').checked;
+    sendCommand("headphones", hpState);
+}
+
+function setAdminPw() {
+    var modal = document.getElementById('pwModalBox');
+    gSettingPw = true;
+    document.getElementById("pwAdminInput").value = localStorage.adminPassword;
+    modal.style.display = "block";
+}
+
+function pwSet(e) {
+    var modal = document.getElementById('pwModalBox');
+    var newPw = document.getElementById("pwAdminInput").value;
+    sendCommand("adminpw", newPw);
+    localStorage.adminPassword = newPw;
+    modal.style.display = "none";
+    gSettingPw = false;
+}
 
 if (!localStorage.adminPassword) {
     localStorage.adminPassword = "admin";
 }
 
+
 window.onload = function () {
     pollStatus();
     setInterval(pollStatus, 2000);
 
+  
     
 }
