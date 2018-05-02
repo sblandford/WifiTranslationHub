@@ -107,14 +107,29 @@ def respond(path, params, fullPath):
                         code = 400
                         problem = "id too short : " + id
                     if params['id'][2:3] == "+":
+                        if not 'allowedIds' in channelDict['channels'][channel]:
+                            channelDict['channels'][channel]['allowedIds'] = []
                         if not id in channelDict['channels'][channel]['allowedIds']:
                             channelDict['channels'][channel]['allowedIds'].append(id)
                     elif params['id'][2:3] == "-":
-                        if id in channelDict['channels'][channel]['allowedIds']:
-                            del channelDict['channels'][channel]['allowedIds'][id]
+                        if 'allowedIds' in channelDict['channels'][channel] and id in channelDict['channels'][channel]['allowedIds']:
+                            channelDict['channels'][channel]['allowedIds'].remove(id)
                     else:
                         code = 400
                         problem = "Expecting + or - after channel number"
+            if code == 200 and 'idrename' and 'name' in params:
+                id = params['idrename']
+                name = params['name']
+                #Create frienly name dictionary if not there
+                if not 'friendlyNames' in channelDict:
+                    channelDict['friendlyNames'] = {}
+                if len(name) > 0:
+                    #Add new name for UUID
+                    channelDict['friendlyNames'][id] = name
+                else:
+                    #Clear name for UUID
+                    if id in channelDict['friendlyNames']:
+                        del channelDict['friendlyNames'][id]
             if code == 200 and 'headphones' in params:
                 if params['headphones'] == "false" or params['headphones'] == "0":
                     channelDict['mandatoryHeadphones'] = False
