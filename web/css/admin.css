@@ -74,6 +74,9 @@
     text-align: center;
 }
 
+.statusNone {
+    background-color: LightGray;
+}
 .statusGood {
     background-color: green;
 }

@@ -193,13 +193,16 @@ function nameField (newRow, channel) {
 
 function statusField (newRow, channel) {
     var cell = newRow.insertCell(-1);
-    if (gStatus['channels'][channel]['status']) {
+    if (gStatus['channels'][channel].hasOwnProperty('valid') && gStatus['channels'][channel]['valid']) {
         if (gStatus['channels'][channel].hasOwnProperty('kbps')) {
             cell.innerHTML = gStatus['channels'][channel]['kbps'] + "kbps";
         }
         cell.className += " statusGood";
-    } else {
+        statusFound = true;
+    } else if (gStatus['channels'][channel].hasOwnProperty('busy') && gStatus['channels'][channel]['busy']) {
         cell.className += " statusBad";
+    } else {
+        cell.className += " statusNone";
     }
 }
 
