@@ -193,7 +193,7 @@ def runChannel(channel):
 
 
     logging.debug("Starting channel : %d", channel)
-    channelDict['channels'][channel]['status'] = False
+    channelDict['channels'][channel]['valid'] = False
     channelDict['channels'][channel]['rtspSessions'] = []
     channelDict['channels'][channel]['httpSessions'] = []
     if not channel in privChannelDict['channels']:
@@ -343,17 +343,19 @@ def reflectRTP(channel):
         if timeout:
             logging.debug("Timeout on channel %s", channel)
             with privChannelDict['channels'][channel]['lock']:
-                channelDict['channels'][channel]['status'] = False
+                channelDict['channels'][channel]['valid'] = False
+                channelDict['channels'][channel]['busy'] = False
             with privChannelDict['channels'][channel]['newPacketLock']:
                 privChannelDict['channels'][channel]['newPacketLock'].notify_all()
             continue
         else:
             with privChannelDict['channels'][channel]['rtpLock']:
+                channelDict['channels'][channel]['busy'] = True
                 privChannelDict['channels'][channel]['rtpPacket'] = data
         if not amrPacket(data):
             logging.debug("received %d bytes of invalid data on channel %d from %s", len(data), channel, address)
             with privChannelDict['channels'][channel]['lock']:
-                channelDict['channels'][channel]['status'] = False
+                channelDict['channels'][channel]['valid'] = False
             continue
         seq = (data[2] << 8) + data[3]
         timeStamp = (data[4] << 24) + (data[5] << 16) + (data[6] << 8) + data[7]
@@ -364,7 +366,7 @@ def reflectRTP(channel):
                 privChannelDict['channels'][channel]['timeStamp'] = timeStamp
                 privChannelDict['channels'][channel]['rtpPacket'] = data
                 channelDict['channels'][channel]['kbps'] = amrKbps(data)
-                channelDict['channels'][channel]['status'] = True
+                channelDict['channels'][channel]['valid'] = True
         logging.debug("received %d bytes on channel %d from %s with seq %d and timestamp %d", len(data), channel,
                       address, seq, timeStamp)
         with privChannelDict['channels'][channel]['newPacketLock']:
@@ -408,8 +410,10 @@ def shortStatWorker():
             with privChannelDict['channels'][i]['lock']:
                 if not i in channelStatDict:
                     channelStatDict[i] = {}
-                if "status" in channelDict['channels'][i]:
-                    channelStatDict[i]["status"] = channelDict['channels'][i]["status"]
-                if "name" in channelDict['channels'][i]:
-                    channelStatDict[i]["name"] = channelDict['channels'][i]["name"]
+                if 'busy' in channelDict['channels'][i]:
+                    channelStatDict[i]['busy'] = channelDict['channels'][i]['busy']
+                if 'valid' in channelDict['channels'][i]:
+                    channelStatDict[i]['valid'] = channelDict['channels'][i]['valid']
+                if 'name' in channelDict['channels'][i]:
+                    channelStatDict[i]['name'] = channelDict['channels'][i]['name']
         time.sleep(1)

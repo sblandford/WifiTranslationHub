@@ -88,8 +88,8 @@ function updateDisplay() {
         var name = (parseInt(channel) + 1).toString();
         var customName = false;
         
-        if (gStatus[channel].hasOwnProperty("status")) {
-            status = gStatus[channel]['status'];
+        if (gStatus[channel].hasOwnProperty('valid')) {
+            status = gStatus[channel]['valid'];
         }
         if (gStatus[channel].hasOwnProperty("name")) {
             name = gStatus[channel]["name"];
