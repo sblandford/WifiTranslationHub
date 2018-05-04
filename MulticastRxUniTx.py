@@ -410,6 +410,8 @@ def shortStatWorker():
             with privChannelDict['channels'][i]['lock']:
                 if not i in channelStatDict:
                     channelStatDict[i] = {}
+                if 'allowedIds' in channelDict['channels'][i]:
+                    channelStatDict[i]['allowedIds'] = channelDict['channels'][i]['allowedIds']
                 if 'busy' in channelDict['channels'][i]:
                     channelStatDict[i]['busy'] = channelDict['channels'][i]['busy']
                 if 'valid' in channelDict['channels'][i]:
