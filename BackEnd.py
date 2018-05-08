@@ -39,7 +39,7 @@ id=XX<+/-><UUID>, where XX is the channel number <+/-> indicates add or remove f
 headphones=true/false, enable or disable the mandatory headphones flag
 open=XX<+/->, where XX is the channel number, open or close channel to allow new UUID to transmit or to lock
 """
-def respond(path, params, fullPath):
+def respond(path, params, fullPath, onLan = True):
     global channelDict
     global channelStatDict
     global privChannelDict
@@ -54,6 +54,11 @@ def respond(path, params, fullPath):
         code = 200
         content = ''
         problem = ''
+        if not onLan:
+            code = 400
+            problem = "Attempt to access admin page from WAN"
+            logging.warning(problem)
+            return code, problem, callback + '(' + content + ')', cacheSeconds
         logging.debug("Full status requested")
         password = config.DEFAULT_ADMIN_PASSWORD
         if 'adminPassword' in channelDict:
