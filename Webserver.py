@@ -101,6 +101,19 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         channel, seq, path, params, ip = RTSPServerSession.urlDecode(str(self.path))
 
+        onLan = True
+        for header in self.headers._headers:
+            param, value = header
+            if param == "X-Forwarded-For":
+                remoteIpPart = re.match("^[0-9]{1,3}\.[0-9]{1,3}", value)
+                if remoteIpPart:
+                    localIpPart = re.match("^[0-9]{1,3}\.[0-9]{1,3}", IpBroadcaster.ip)
+                    if localIpPart:
+                        if remoteIpPart.group() != localIpPart.group():
+                            onLan = False
+
+
+
         if channel >= 0:
             if '/rtp/' in path:
                 #If we have a channel and a uuid parameter then register client and return seq number
@@ -125,7 +138,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return
 
         if '/json/' in path:
-            code, problem, content, cacheSeconds = BackEnd.respond(path, params, self.path)
+            code, problem, content, cacheSeconds = BackEnd.respond(path, params, self.path, onLan)
             if code == 200:
                 contentType = "application/javascript"
                 self._respond(contentType, bytearray(content, "utf8"), cacheSeconds)
@@ -134,9 +147,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return
         elif re.match("\/qr($|\/)", path):
             serverPort = config.WEB_SERVER_PORT
+            accessCode = ""
             if config.HUB_ACCESS_PORT > 0:
                 serverPort = config.HUB_ACCESS_PORT
-            linkAddr = "http://" + IpBroadcaster.hubAddress + ":" + str(serverPort)
+            if len(config.HUB_ACCESS_CODE) > 0:
+                accessCode = "/?acode=" + config.HUB_ACCESS_CODE
+            linkAddr = "http://" + IpBroadcaster.hubAddress + ":" + str(serverPort) + accessCode
             contentType = "text/html"
             content  = "<!DOCTYPE html>\n"
             content += "<html>\n"
@@ -163,6 +179,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
         #Default to a simple static content web server
         if len(path) == 0 or path == "/":
             path = "index.html"
+
+        if not onLan and re.match(".*index.html", path) and (not 'acode' in params or params['acode'] != config.HUB_ACCESS_CODE):
+            code = 401
+            problem = "Unauthorised access"
+            self._error(code, problem)
+            return
+
         contentType, encoding = mimetypes.guess_type(path)
         filePath = os.getcwd() + '/web/' + path
         logging.debug("Opening file : %s, type %s", filePath, contentType)
