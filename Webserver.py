@@ -133,7 +133,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 self._error(code, problem)
             return
         elif re.match("\/qr($|\/)", path):
-            linkAddr = "http://" + IpBroadcaster.hubAddress + ":" + str(config.WEB_SERVER_PORT)
+            serverPort = config.WEB_SERVER_PORT
+            if config.HUB_ACCESS_PORT > 0:
+                serverPort = config.HUB_ACCESS_PORT
+            linkAddr = "http://" + IpBroadcaster.hubAddress + ":" + str(serverPort)
             contentType = "text/html"
             content  = "<!DOCTYPE html>\n"
             content += "<html>\n"
