@@ -156,9 +156,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
             accessCode = ""
             if config.HUB_ACCESS_PORT > 0:
                 serverPort = config.HUB_ACCESS_PORT
+            serverPortText = ":" + str(serverPort)
+            if (serverPort == 80 and config.HUB_LAN_PROTOCOL == "http") or (serverPort == 443 and config.HUB_LAN_PROTOCOL == "https"):
+                serverPortText = ""
             if len(config.HUB_ACCESS_CODE) > 0:
                 accessCode = "/?acode=" + config.HUB_ACCESS_CODE
-            linkAddr = config.HUB_LAN_PROTOCOL + "://" + IpBroadcaster.hubAddress + ":" + str(serverPort) + accessCode
+            linkAddr = config.HUB_LAN_PROTOCOL + "://" + IpBroadcaster.hubAddress + ":" + serverPortText + accessCode
             contentType = "text/html"
             content  = "<!DOCTYPE html>\n"
             content += "<html>\n"
