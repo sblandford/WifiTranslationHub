@@ -115,17 +115,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         if remoteIpPart.group() != localIpPart.group():
                             onLan = False
 
-        protocol = config.HUB_WAN_PROTOCOL
-        if onLan:
-            protocol = config.HUB_LAN_PROTOCOL
-
-
         if channel >= 0:
             if '/rtp/' in path:
                 #If we have a channel and a uuid parameter then register client and return seq number
                 if 'uuid' in params and len(params['uuid']) == config.UUID_LENGTH:
                     contentType = "application/javascript"
-                    content = BackEnd.RtpRefesh(channel, params)
+                    content = BackEnd.RtpRefesh(channel, params, onLan)
                     self._respond(contentType, bytearray(content, "utf8"))
                     return
                 elif seq >= 0:

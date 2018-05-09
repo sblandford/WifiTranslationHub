@@ -277,8 +277,8 @@ function countFields (newRow, channel) {
     //HTTP LAN count
     cell = newRow.insertCell(-1);
     cell.className += " countDigits";
-    if (gStatus['channels'][channel].hasOwnProperty('httpSessions')) {
-        cell.innerHTML = gStatus['channels'][channel]['httpSessions'].length
+    if (gStatus['channels'][channel].hasOwnProperty('httpLanSessions')) {
+        cell.innerHTML = gStatus['channels'][channel]['httpLanSessions'].length
     } else {
         cell.innerHTML = 0;
     }
@@ -286,7 +286,11 @@ function countFields (newRow, channel) {
     //HTTP WAN count (not implemented yet)
     cell = newRow.insertCell(-1);
     cell.className += " countDigits";
-    cell.innerHTML = "-";
+    if (gStatus['channels'][channel].hasOwnProperty('httpWanSessions')) {
+        cell.innerHTML = gStatus['channels'][channel]['httpWanSessions'].length
+    } else {
+        cell.innerHTML = 0;
+    }
     
     //RTSP count
     cell = newRow.insertCell(-1);
