@@ -161,7 +161,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 serverPortText = ""
             if len(config.HUB_ACCESS_CODE) > 0:
                 accessCode = "/?acode=" + config.HUB_ACCESS_CODE
-            linkAddr = config.HUB_LAN_PROTOCOL + "://" + IpBroadcaster.hubAddress + ":" + serverPortText + accessCode
+            linkAddr = config.HUB_LAN_PROTOCOL + "://" + IpBroadcaster.hubAddress  + serverPortText + accessCode
             contentType = "text/html"
             content  = "<!DOCTYPE html>\n"
             content += "<html>\n"
