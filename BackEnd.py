@@ -190,13 +190,13 @@ def respond(path, params, fullPath, onLan = True):
 
     return code, problem, callback + '(' + content + ')', cacheSeconds
 
-def RtpRefesh (channel, params):
+def RtpRefesh (channel, params, onLan):
     callback = "parseResponse"
     if 'callback' in params:
         callback = params['callback']
 
     clientInfo = {'uuid': params['uuid'], 'channel': channel}
-    MulticastRxUniTx.addHttpClientIfNot(clientInfo)
+    MulticastRxUniTx.addHttpClientIfNot(clientInfo, onLan)
     content = json.dumps(
         {
             'seq': MulticastRxUniTx.getSeq(channel)

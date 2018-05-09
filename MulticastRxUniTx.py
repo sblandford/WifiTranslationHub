@@ -67,13 +67,16 @@ def removeAllClients(channel):
     logging.debug("Removing all RTSP clients of channel : %d", channel)
     with privChannelDict['channels'][channel]['lock']:
         rtspSessions = list(channelDict['channels'][channel]['rtspSessions'])
-        httpSessions = list(channelDict['channels'][channel]['httpSessions'])
+        httpLanSessions = list(channelDict['channels'][channel]['httpLanSessions'])
+        httpWanSessions = list(channelDict['channels'][channel]['httpWanSessions'])
     for sessionId in rtspSessions:
         removeRtspClient(sessionId)
-    for uuid in httpSessions:
+    for uuid in httpLanSessions:
+        removeHttpClient(uuid)
+    for uuid in httpWanSessions:
         removeHttpClient(uuid)
 
-def addHttpClientIfNot(clientInfo):
+def addHttpClientIfNot(clientInfo, onLan):
     global channelDict
     global clientDictionary
     global lock
@@ -92,7 +95,7 @@ def addHttpClientIfNot(clientInfo):
     with privChannelDict['channels'][channel]['lock']:
         if uuid in clientDictionary:
             foundUuid = True
-            if not uuid in channelDict['channels'][channel]['httpSessions']:
+            if not uuid in channelDict['channels'][channel]['httpLanSessions'] and not uuid in channelDict['channels'][channel]['httpWanSessions']:
                 channelChanged = True
     if channelChanged:
         logging.debug("Detected channel change for uuid : %s", uuid)
@@ -105,7 +108,10 @@ def addHttpClientIfNot(clientInfo):
         clientDictionary[uuid]['thread'] = threading.Thread(target=timeHttpClient, args=(uuid,))
     with privChannelDict['channels'][channel]['lock']:
         # Assign client to channel list
-        channelDict['channels'][channel]['httpSessions'].append(uuid)
+        if onLan:
+            channelDict['channels'][channel]['httpLanSessions'].append(uuid)
+        else:
+            channelDict['channels'][channel]['httpWanSessions'].append(uuid)
     clientDictionary[uuid]['thread'].start()
     logging.debug("Added HTTP client with UUID : %s", uuid)
 
@@ -123,7 +129,10 @@ def removeHttpClient(uuid):
         with lock:
             del clientDictionary[uuid]
         with privChannelDict['channels'][channel]['lock']:
-            channelDict['channels'][channel]['httpSessions'].remove(uuid)
+            if uuid in channelDict['channels'][channel]['httpLanSessions']:
+                channelDict['channels'][channel]['httpLanSessions'].remove(uuid)
+            if uuid in channelDict['channels'][channel]['httpWanSessions']:
+                channelDict['channels'][channel]['httpWanSessions'].remove(uuid)
         logging.debug("Removed HTTP client with sessionId : %s", uuid)
 
 def clientInfoFromUuid(uuid):
@@ -196,7 +205,8 @@ def runChannel(channel):
     logging.debug("Starting channel : %d", channel)
     channelDict['channels'][channel]['valid'] = False
     channelDict['channels'][channel]['rtspSessions'] = []
-    channelDict['channels'][channel]['httpSessions'] = []
+    channelDict['channels'][channel]['httpLanSessions'] = []
+    channelDict['channels'][channel]['httpWanSessions'] = []
     if not channel in privChannelDict['channels']:
         privChannelDict['channels'][channel] = {}
     privChannelDict['channels'][channel]['ended'] = False
