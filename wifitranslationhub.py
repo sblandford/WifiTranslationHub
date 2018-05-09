@@ -124,7 +124,7 @@ def appData():
     elif sys.platform == 'win32':
         appdata = os.path.join(os.environ['APPDATA'], APPNAME)
     else:
-        appdata = os.path.expanduser(os.path.join("~", ".config/" + APPNAME))
+        appdata = os.path.expanduser(os.path.join(os.environ['HOME'], ".config/" + APPNAME))
     path = os.path.dirname(appdata)
     if not os.path.exists(path):
         try:
