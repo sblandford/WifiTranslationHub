@@ -1,11 +1,12 @@
 __author__ = "Simon Blandford"
 
 import calendar
-import config
-import copy
+try:
+    import config
+except ImportError:
+    import config_dist as config
 import ipaddress
 import logging
-import os
 import select
 import socket
 import struct

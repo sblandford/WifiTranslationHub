@@ -2,7 +2,10 @@
 
 __author__ = 'Simon Blandford'
 
-import config
+try:
+    import config
+except ImportError:
+    import config_dist as config
 import logging
 import random
 import re
@@ -106,7 +109,7 @@ def getIp():
         hubAddress = config.REQUIRED_HOSTNAME
     else:
         logging.warning(config.REQUIRED_HOSTNAME + ' resolves to ' +
-            dnsResponse + ' but it should resolve to ' + ip)
+                        dnsResponse + ' but it should resolve to ' + ip)
         return False, ip
     return True, ip
 

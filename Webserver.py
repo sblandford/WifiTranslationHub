@@ -5,7 +5,10 @@ __author__ = "Simon Blandford"
 import http.server
 import logging
 
-import config
+try:
+    import config
+except ImportError:
+    import config_dist as config
 import http.server
 import mimetypes
 import os
@@ -112,6 +115,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         if remoteIpPart.group() != localIpPart.group():
                             onLan = False
 
+        protocol = config.HUB_WAN_PROTOCOL
+        if onLan:
+            protocol = config.HUB_LAN_PROTOCOL
 
 
         if channel >= 0:
@@ -152,7 +158,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 serverPort = config.HUB_ACCESS_PORT
             if len(config.HUB_ACCESS_CODE) > 0:
                 accessCode = "/?acode=" + config.HUB_ACCESS_CODE
-            linkAddr = "http://" + IpBroadcaster.hubAddress + ":" + str(serverPort) + accessCode
+            linkAddr = config.HUB_LAN_PROTOCOL + "://" + IpBroadcaster.hubAddress + ":" + str(serverPort) + accessCode
             contentType = "text/html"
             content  = "<!DOCTYPE html>\n"
             content += "<html>\n"

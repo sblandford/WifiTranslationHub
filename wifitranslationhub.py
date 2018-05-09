@@ -2,7 +2,10 @@
 
 __author__ = "Simon Blandford"
 
-import config
+try:
+    import config
+except ImportError:
+    import config_dist as config
 import copy
 import json
 import logging

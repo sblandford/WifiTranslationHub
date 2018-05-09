@@ -1,7 +1,10 @@
 __author__ = "Simon Blandford"
 
 import calendar
-import config
+try:
+    import config
+except ImportError:
+    import config_dist as config
 import datetime
 import ipaddress
 import logging

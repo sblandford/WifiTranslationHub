@@ -4,7 +4,10 @@ __author__ = 'Simon Blandford'
 
 # Based on https://github.com/TibbersDriveMustang/Video-Streaming-Server-and-Client
 
-import config
+try:
+    import config
+except ImportError:
+    import config_dist as config
 import logging
 import socket
 import threading
