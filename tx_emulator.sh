@@ -46,7 +46,7 @@ send_audio () {
     bitrate=${bitrates[quality]}
     
 
-    ffmpeg -re -f lavfi -i "sine=frequency=$freq:sample_rate=16000" -c:a libvo_amrwbenc -b:a $bitrate -f rtp rtp://@228.227.226.$(( 225 + channel )):1234
+    ffmpeg -re -f lavfi -i "sine=frequency=$freq:sample_rate=16000" -c:a libvo_amrwbenc -b:a $bitrate -f rtp rtp://@228.227.226.$(( 225 + channel )):1234?pkt_size=200
 }
 
 send_uuid () {

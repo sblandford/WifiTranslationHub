@@ -180,11 +180,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if len(path) == 0 or path == "/":
             path = "index.html"
 
-        if not onLan and re.match(".*index.html", path) and (not 'acode' in params or params['acode'] != config.HUB_ACCESS_CODE):
-            code = 401
-            problem = "Unauthorised access"
-            self._error(code, problem)
-            return
+        isIndex = False
+        if re.match(".*index.html", path):
+            isIndex = True
+            if not onLan and (not 'acode' in params or params['acode'] != config.HUB_ACCESS_CODE):
+                code = 401
+                problem = "Unauthorised access"
+                self._error(code, problem)
+                return
 
         contentType, encoding = mimetypes.guess_type(path)
         filePath = os.getcwd() + '/web/' + path
@@ -196,6 +199,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self._error(404, "File not found : " + path)
         else:
             binContent = bytearray(fsock.read())
+            fsock.close()
+            #Disable Android app download if index file and config set. So all clients use web app only.
+            if isIndex and not config.QR_CODE_INCLUDE_ANDROID_APP:
+                binContent = binContent.replace(b"includeApp = true", b"includeApp = false")
             self._respond(contentType, binContent, config.HTTP_WEB_CACHE_SECONDS)
 
 

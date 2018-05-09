@@ -518,7 +518,7 @@ if (! LANG.hasOwnProperty(gLang)) {
 }
 
 //Bounce Android devices to app on first view
-if (!localStorage.hasOwnProperty("isAndroid")) {
+if (includeApp && !localStorage.hasOwnProperty("isAndroid")) {
     var ua = navigator.userAgent.toLowerCase();
     var isAndroid = (ua.indexOf("android") > -1);
     if(isAndroid) {
