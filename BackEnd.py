@@ -4,7 +4,10 @@ __author__ = "Simon Blandford"
 
 import json
 import logging
-import config
+try:
+    import config
+except ImportError:
+    import config_dist as config
 import re
 
 import MulticastRxUniTx
