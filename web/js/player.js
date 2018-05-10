@@ -171,6 +171,7 @@ function readNextPacket (seq) {
     channelText = channelText.substr(channelText.length - 2);
     var url = "/rtp/" + channelText + "/" + seq;
 
+    console.log("Request seq : " + seq);
     req.onload = function () {
         if (req.status == 200) {
             var arrayBuffer = req.response;
@@ -287,7 +288,7 @@ function playPcm(samples, timeRtp) {
 
             timeMargin = timePresentation - gCtx.currentTime;
             
-            console.log("Presentation time : " + timePresentation + ", Presentation - RTPtime : " + (timePresentation - timeRtp) + ", Presentation - CTXtime: " + timeMargin + ", Buffer time : " + gFutureTime);
+            //console.log("Presentation time : " + timePresentation + ", Presentation - RTPtime : " + (timePresentation - timeRtp) + ", Presentation - CTXtime: " + timeMargin + ", Buffer time : " + gFutureTime);
             gTimePresentationPrev = timePresentation;
             
             /* if (timeMargin < 0.1) {
