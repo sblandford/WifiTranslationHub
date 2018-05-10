@@ -73,7 +73,8 @@ def getIp():
     if len(config.HUB_ACCESS_IP_ADDRESS) > 0:
         ip = config.HUB_ACCESS_IP_ADDRESS
         if config.HUB_TAKE_ACCESS_IP_ADDRESS_AS_GOSPEL:
-            logging.info('Our local IP address defined as %s', ip);
+            hubAddress = config.REQUIRED_HOSTNAME
+            logging.info('Our local IP address defined as %s and hostname defined as %s', ip, hubAddress);
             return True, ip
     else:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
