@@ -15,6 +15,7 @@ var gAppUrl = "https://play.google.com/store/apps/details?id=eu.bkwsu.webcast.wi
 
 var gPrevChannel = 0;
 var gPlaying = false;
+var gSubsequentError = false;
 var gPrevPlaying = false;
 var gPlayError = false;
 var gPrevPlayError = false;
@@ -152,7 +153,7 @@ function readPackets () {
         function(thisSeq) {
             if (thisSeq.hasOwnProperty("seq")) {
                 //Wait for next packet
-                var seq = (thisSeq["seq"] + 1) & 0xFFFF;
+                var seq = (thisSeq["seq"] + 1 + (gPlayError?1:0)) & 0xFFFF;
                 console.log("Next Seq available : " + seq);
                 readNextPacket(seq);
             }
@@ -175,6 +176,8 @@ function readNextPacket (seq) {
     req.onload = function () {
         if (req.status == 200) {
             var arrayBuffer = req.response;
+
+            gSubsequentError = false;
             if (arrayBuffer) {
                 gPacket = new Uint8Array(arrayBuffer);
 
@@ -209,15 +212,23 @@ function readNextPacket (seq) {
 
     req.responseType = "arraybuffer";
     req.open("GET", url);
+    req.setRequestHeader("Cache-Control","");
+    req.setRequestHeader("pragma","");
     req.send();
     
 }
 
 function badPacket () {
     if (gPlaying) {
-        setTimeout(function () {
+        if (gSubsequentError) {
+            setTimeout(function () {
+                readPackets();
+            }, 1000);
+        } else {
+            reallyBad = true;
+            gPlayError = true;
             readPackets();
-        }, 1000);
+        }
     }
     gPlayError = true;
 }

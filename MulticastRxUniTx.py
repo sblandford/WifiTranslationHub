@@ -20,6 +20,7 @@ threads = {}
 clientDictionary = {}
 privChannelDict = {}
 privChannelDict['channels'] = {}
+packetCache = {}
 lock = threading.Lock()
 ended = False
 
@@ -167,14 +168,25 @@ def timeHttpClient(uuid):
 #Wait for RTP packet and return it
 def getHttpRtpPacketSeq(channel, seq):
     global privChannelDict
+    global packetCache
+    
+    #Quick check to see if in cache
+    #with privChannelDict['channels'][channel]['lock']:
+    if seq in packetCache:
+        logging.debug("Cache hit on packet seq : %d", seq)
+        return packetCache[seq]
+    
     #Can't return old packet
     if seq < getSeq(channel):
+        logging.debug("Request for old HTTP RTP packet %d when %d is available", seq, getSeq(channel))
         return False
     #Future limited to prevent waiting forever
     if seq > getSeq(channel) + config.HTTP_MAX_SEQ_AHEAD:
+        logging.debug("Request for HTTP RTP packet %d too far in future when %d is possible", seq, (getSeq(channel) + config.HTTP_MAX_SEQ_AHEAD))
         return False
     #Wait until requested seq arrives
     if not 'newPacketLock' in privChannelDict['channels'][channel]:
+        logging.debug("Expected packetlock for HTTP RTP packet not found")
         return False
     while seq > getSeq(channel):
         with privChannelDict['channels'][channel]['newPacketLock']:
@@ -184,6 +196,11 @@ def getHttpRtpPacketSeq(channel, seq):
                 return False
     #Probably expired waiting
     if seq != getSeq(channel):
+        #See if it has appeared in cache before giving up
+        if seq in packetCache:
+            logging.debug("Cache hit on packet seq : %d", seq)
+            return packetCache[seq]        
+        logging.debug("Packet %d expired waiting when %d is now available", seq, getSeq(channel))
         return False
     #We have our packet
     with privChannelDict['channels'][channel]['rtpLock']:
@@ -318,6 +335,7 @@ def reflectRTP(channel):
     global clientDictionary
     global lock
     global privChannelDict
+    global packetCache
     global seq
     global timeStamp
 
@@ -379,6 +397,11 @@ def reflectRTP(channel):
                 privChannelDict['channels'][channel]['seq'] = seq
                 privChannelDict['channels'][channel]['timeStamp'] = timeStamp
                 privChannelDict['channels'][channel]['rtpPacket'] = data
+                if not seq in packetCache:
+                    packetCache[seq] = data
+                    for cacheSeq in list(packetCache.keys()):
+                        if cacheSeq < (seq - config.CACHE_NUMBER_OF_PACKETS):
+                            del packetCache[cacheSeq]
                 channelDict['channels'][channel]['kbps'] = amrKbps(data)
                 channelDict['channels'][channel]['valid'] = True
         logging.debug("received %d bytes on channel %d from %s with seq %d and timestamp %d", len(data), channel,
