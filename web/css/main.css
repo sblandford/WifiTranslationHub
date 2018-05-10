@@ -95,6 +95,7 @@ tr.stat {
     height:3em;
 }
 div.stat {
+    display : none;
     font-family: monospace;
 }
 
