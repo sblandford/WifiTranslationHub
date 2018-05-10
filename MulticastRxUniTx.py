@@ -371,6 +371,9 @@ def reflectRTP(channel):
         seq = (data[2] << 8) + data[3]
         timeStamp = (data[4] << 24) + (data[5] << 16) + (data[6] << 8) + data[7]
 
+        if seq != (seqPrev + 1) and seq != 0 and seqPrev != 0xFFFF:
+            logging.info("Missed packet from seq %d to %d on channel %s", seqPrev, seq, channel)
+
         if seq > seqPrev:
             with privChannelDict['channels'][channel]['lock']:
                 privChannelDict['channels'][channel]['seq'] = seq
