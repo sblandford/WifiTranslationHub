@@ -2,6 +2,7 @@
 
 __author__ = "Simon Blandford"
 
+import math
 import json
 import logging
 try:
@@ -210,4 +211,18 @@ def hash(s):
     for c in s:
         h = (31 * h + ord(c)) & 0xFFFFFFFF
     return format(abs(((h + 0x80000000) & 0xFFFFFFFF) - 0x80000000), 'x')
+
+#Calculate distance from venue centre from coordinates and return in range or not
+def inRange(lat, lon):
+    radLat = math.radians(lat)
+    radVenueLat = math.radians(config.HUB_WAN_LOCATION_LATITUDE_DEGREES)
+    deltaLat = math.radians(config.HUB_WAN_LOCATION_LATITUDE_DEGREES - lat)
+    deltaLon = math.radians(config.HUB_WAN_LOCATION_LONGITUDE_DEGREES - lon)
+    a = math.sin(deltaLat / 2) * math.sin(deltaLat / 2) + \
+        math.cos(radLat) * math.cos(radVenueLat) * \
+        math.sin(deltaLon / 2) * math.sin(deltaLon / 2)
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    d = config.HUB_WAN_LOCATION_EARTH_RADIUS_METERS * c
+
+    return (config.HUB_WAN_LOCATION_RADIUS_METERS > d)
 

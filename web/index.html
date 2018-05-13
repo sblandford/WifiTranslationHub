@@ -42,6 +42,15 @@
         <div id="qrBox" class="qrBox">
             <object id="qrObj" class="qrObj" type="text/html" data="/qr/index.html" ></object>
         </div>        
+        <div id="geoBox" class="geoBox">
+
+            <p class="geoBoxText" id="geoBoxText">Permission is required to check your location</p>
+            <div class="geoWrapper">                
+                <button onclick="geoApprove();" class="ui geoBtn" id="geoConfirmButton">Confirm</button>
+                <p>&nbsp;</p>
+                <button onclick="geoDecline();" class="ui geoBtn" id="geoDeclineButton">Decline</button>
+            </div>
+        </div>
         <div id="appDiv" class="appDiv">
             <button class="appBtn" id="appBtn" onclick="window.location = gAppUrl;"></button>
         </div>

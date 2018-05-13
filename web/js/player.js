@@ -29,6 +29,10 @@ var gAmrwbWorker = new Worker('js/amrwb-worker.js');
 var gMenuDisplayed = false;
 var gMenuBox = null;
 
+//Goelocation
+var gGeoActive = false;
+var gGeoRequired = false;
+
 
 function mobileAndTabletcheck () {
     var check = false;
@@ -69,7 +73,7 @@ function pollStatus () {
   loadJSONP(
     "/json/stat.json",
     function(newStatus) {
-        if (JSON.stringify(gStatus) !== JSON.stringify(newStatus)) {          
+        if (JSON.stringify(gStatus) !== JSON.stringify(newStatus)) {
             console.log(newStatus);
             gStatus = newStatus;
             gStatusUpdate = true;
@@ -133,6 +137,10 @@ function updateDisplay() {
     var element = document.getElementById("chSelectList");
     element.innerHTML = listHtml;
     document.getElementById("chSelectBtn").innerText = LANG[gLang]["select"];
+    
+    document.getElementById("geoBoxText").innerText = LANG[gLang]["geoText"];    
+    document.getElementById("geoConfirmButton").innerText = LANG[gLang]["geoYes"];
+    document.getElementById("geoDeclineButton").innerText = LANG[gLang]["geoNo"];
 }
 
 function isNormalInteger(str) {
@@ -151,6 +159,13 @@ function readPackets () {
     loadJSONP(
         url,
         function(thisSeq) {
+            if (thisSeq.hasOwnProperty('geo')) {
+                gGeoRequired = true;
+                if (!gGeoActive) {
+                    stopPlayer();
+                    return
+                }
+            }
             if (thisSeq.hasOwnProperty("seq")) {
                 //Wait for next packet
                 var seq = (thisSeq["seq"] + 1 + (gPlayError?1:0)) & 0xFFFF;
