@@ -3,49 +3,73 @@ var LANG = {
         "select" : "Select",
         "channel": "Channel",
         "start" : "Start",
-        "stop" : "Stop"
+        "stop" : "Stop",
+        "geoText" : "Permission is required to check your location",
+        "geoYes" : "Confirm",
+        "geoNo" : "Decline"
     },
     "es" : {
         "select" : "Seleccionar",
         "channel" : "Canal",
         "start" : "Comienzo",
-        "stop" : "Detener"
+        "stop" : "Detener",
+        "geoText" : "Se requiere permiso para verificar su ubicación",
+        "geoYes" : "Aceptar",
+        "geoNo" : "Disminución"
     },
     "fr" : {
         "select" : "Sélectionnez",
         "channel" : "Chaîne",
         "start" : "Début",
-        "stop" : "Arrêtez"
+        "stop" : "Arrêtez",
+        "geoText" : "Une permission est requise pour vérifier votre emplacement",
+        "geoYes" : "Acceptez",
+        "geoNo" : "Déclin"
     },
     "hi" : {
         "select" : "चुनते हैं",
         "channel" : "चैनल",
         "start" : "प्रारंभ",
-        "stop" : "रुकें"
+        "stop" : "रुकें",
+        "geoText" : "आपके स्थान की जांच करने के लिए अनुमति की आवश्यकता है",
+        "geoYes" : "स्वीकार करना",
+        "geoNo" : "पतन"
     },
     "nl" : {
         "select" : "Kiezen",
         "channel" : "Kanaal",
         "start" : "Begin",
-        "stop" : "Hou op"
+        "stop" : "Hou op",
+        "geoText" : "Toestemming is vereist om uw locatie te controleren",
+        "geoYes" : "Aanvaarden",
+        "geoNo" : "Afwijzen"
     },
     "pl" : {
         "select" : "Wybierz",
         "channel" : "Kanał",
         "start" : "Początek",
-        "stop" : "Zatrzymać"
+        "stop" : "Zatrzymać",
+        "geoText" : "Do sprawdzenia Twojej lokalizacji potrzebne jest pozwolenie",
+        "geoYes" : "Zaakceptować",
+        "geoNo" : "Upadek"
     },
     "pt" : {
         "select" : "Selecione",
         "channel" : "Canal",
         "start" : "Começar",
-        "stop" : "Pare"
+        "stop" : "Pare",
+        "geoText" : "A permissão é necessária para verificar sua localização",
+        "geoYes" : "Aceitar",
+        "geoNo" : "Declínio"
     },
     "ta" : {
         "select" : "தேர்வு",
         "channel" : "சேனல்",
         "start" : "தொடக்கம்",
-        "stop" : "நிறுத்து"
+        "stop" : "நிறுத்து",
+        "geoText" : "உங்கள் இருப்பிடத்தைச் சரிபார்க்க அனுமதி தேவை",
+        "geoYes" : "ஏற்கவும்",
+        "geoNo" : "சரிவு"
     }  
 }
 
