@@ -32,6 +32,8 @@ var gMenuBox = null;
 //Goelocation
 var gGeoActive = false;
 var gGeoRequired = false;
+var gGeoLat = null;
+var gGeoLon = null;
 
 
 function mobileAndTabletcheck () {
@@ -43,8 +45,8 @@ function mobileAndTabletcheck () {
 //JSONP loader by Gianni Chiappetta
 //https://gist.github.com/gf3/132080
 var loadJSONP = (function(){
-  var unique = 0;
-  return function(url, callback, context) {
+    var unique = 0;
+    return function(url, callback, context) {
     // INIT
     var name = "jp" + unique++;
     if (url.match(/\?/)) url += "&callback="+name;
@@ -57,10 +59,10 @@ var loadJSONP = (function(){
     
     // Setup handler
     window[name] = function(data){
-      callback.call((context || window), data);
-      document.getElementsByTagName('head')[0].removeChild(script);
-      script = null;
-      delete window[name];
+        callback.call((context || window), data);
+        document.getElementsByTagName('head')[0].removeChild(script);
+        script = null;
+        delete window[name];
     };
     
     // Load JSON
@@ -70,17 +72,18 @@ var loadJSONP = (function(){
 
 //Poll status every two seconds
 function pollStatus () {
-  loadJSONP(
-    "/json/stat.json",
-    function(newStatus) {
-        if (JSON.stringify(gStatus) !== JSON.stringify(newStatus)) {
-            console.log(newStatus);
-            gStatus = newStatus;
-            gStatusUpdate = true;
-            updateDisplay();
+    pollGeo ();
+    loadJSONP(
+        "/json/stat.json",
+        function(newStatus) {
+            if (JSON.stringify(gStatus) !== JSON.stringify(newStatus)) {
+                console.log(newStatus);
+                gStatus = newStatus;
+                gStatusUpdate = true;
+                updateDisplay();
+            }
         }
-    }
-  );
+    );
 }
 
 function updateDisplay() {
@@ -147,6 +150,11 @@ function isNormalInteger(str) {
     return /^\+?(0|[1-9]\d*)$/.test(str);
 }
 
+/* TODO If status has "geo" property then location must be sent to host
+ * The host then checks if location is in range and if so allows
+ * packets to be sent
+ */
+
 
 function readPackets () {
     var channel = parseInt(localStorage.channel);
@@ -163,6 +171,8 @@ function readPackets () {
                 gGeoRequired = true;
                 if (!gGeoActive) {
                     stopPlayer();
+                    getGeo();
+                    gGeoActive = true;
                     return
                 }
             }
@@ -532,6 +542,25 @@ function showQr() {
     boxDiv.classList.toggle("qrShow");
 }
 
+//Fetch coordinates if we have permission
+function pollGeo () {
+    //Check if we have permissions and fetch if we don't already have
+    if (navigator.permissions && !gGeoLat) {
+        navigator.permissions.query({name: 'geolocation'}).then(function(PermissionStatus) {
+            if('granted' === PermissionStatus.state) {
+                getGeo ();
+            }
+        });
+    }
+}
+
+function getGeo () {
+    navigator.geolocation.getCurrentPosition(function(geoposition) {
+        gGeoLat = geoposition.coords.latitude;
+        gGeoLon = geoposition.coords.longitude;
+    });
+}
+
 //Start here
 if (!localStorage.hasOwnProperty("uuid")) {
     localStorage.uuid = guid();
@@ -559,6 +588,6 @@ window.onload = function () {
     if (localStorage.isAndroid === "true" ) {
         document.getElementById("appDiv").classList.add("appShow");
     }
-    updateDisplay();
+    pollStatus();
     setInterval(pollStatus, 2000);
 }
