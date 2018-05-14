@@ -162,20 +162,15 @@ function readPackets () {
     var channelText = (channel <= 9)?("0" + channel):channel.toString();
     channelText = channelText.substr(channelText.length - 2);
     var url = "/rtp/" + channelText + "?uuid=" + localStorage.uuid;
+    
+    if (gGeoLat) {
+        url += "&lat=" + gGeoLat + "&lon=" + gGeoLon;
+    }
 
     gUpdateSeq = false;
     loadJSONP(
         url,
         function(thisSeq) {
-            if (thisSeq.hasOwnProperty('geo')) {
-                gGeoRequired = true;
-                if (!gGeoActive) {
-                    stopPlayer();
-                    getGeo();
-                    gGeoActive = true;
-                    return
-                }
-            }
             if (thisSeq.hasOwnProperty("seq")) {
                 //Wait for next packet
                 var seq = (thisSeq["seq"] + 1 + (gPlayError?1:0)) & 0xFFFF;
@@ -451,6 +446,16 @@ function buttonStatus () {
 //setInterval(buttonStatus, 500);
 
 function startPlayer() {
+    //Do we need to get position
+    if (gStatus.hasOwnProperty('onLan') && !gStatus['onLan'] && !gGeoLat) {
+        var geoDiv = document.getElementById("geoBox");
+        geoDiv.classList.add("geoShow");
+    } else {
+        startPlayer2();
+    }
+}
+
+function startPlayer2 () {
     gPlaying = true;
     if (!gCtx) {
         gCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -473,10 +478,8 @@ function startPlayer() {
     }, 60 * 1000); 
 
     playPcm.buffer = new Float32Array(0);
-    readPackets();
+    readPackets();    
 }
-
-
 
 function stopPlayer() {
     gPlaying = false;
@@ -559,6 +562,19 @@ function getGeo () {
         gGeoLat = geoposition.coords.latitude;
         gGeoLon = geoposition.coords.longitude;
     });
+}
+
+//Get user approval before browser also asks for approval
+//This is to reduce the likelyhood of the user refusing permission as a reflex action
+//and having to reset the "remembered" response again
+function geoApprove() {
+    var geoDiv = document.getElementById("geoBox");
+    geoDiv.classList.remove("geoShow");
+    getGeo ();
+}
+function geoDecline() {
+    var geoDiv = document.getElementById("geoBox");
+    geoDiv.classList.remove("geoShow");    
 }
 
 //Start here

@@ -107,6 +107,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         onLan = True
         for header in self.headers._headers:
             param, value = header
+
             if param == "X-Forwarded-For":
                 remoteIpPart = re.match("^[0-9]{1,3}\.[0-9]{1,3}", value)
                 if remoteIpPart:
@@ -114,11 +115,22 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     if localIpPart:
                         if remoteIpPart.group() != localIpPart.group():
                             onLan = False
-
         if channel >= 0:
             if '/rtp/' in path:
                 #If we have a channel and a uuid parameter then register client and return seq number
                 if 'uuid' in params and len(params['uuid']) == config.UUID_LENGTH:
+                    if not onLan:
+                        if 'lat' in params and 'lon' in params:
+                            try:
+                                lat = float(params['lat'])
+                                lon = float(params['lon'])
+                            except ValueError:
+                                self._error(400, "Malformed co-ordinates")
+                                return
+                            if not BackEnd.inRange(lat, lon):
+                                self._error(403, "Client out of range of venue")
+                        else:
+                            self._error(403, "Unable to access if client is at venue")
                     contentType = "application/javascript"
                     content = BackEnd.RtpRefesh(channel, params, onLan)
                     self._respond(contentType, bytearray(content, "utf8"))
@@ -154,8 +166,6 @@ class Handler(http.server.BaseHTTPRequestHandler):
             serverPortText = ":" + str(serverPort)
             if (serverPort == 80 and config.HUB_LAN_PROTOCOL == "http") or (serverPort == 443 and config.HUB_LAN_PROTOCOL == "https"):
                 serverPortText = ""
-            if len(config.HUB_ACCESS_CODE) > 0:
-                accessCode = "/?acode=" + config.HUB_ACCESS_CODE
             linkAddr = config.HUB_LAN_PROTOCOL + "://" + IpBroadcaster.hubAddress  + serverPortText + accessCode
             contentType = "text/html"
             content  = "<!DOCTYPE html>\n"
@@ -187,11 +197,6 @@ class Handler(http.server.BaseHTTPRequestHandler):
         isIndex = False
         if re.match(".*index.html", path):
             isIndex = True
-            if not onLan and (not 'acode' in params or params['acode'] != config.HUB_ACCESS_CODE):
-                code = 401
-                problem = "Unauthorised access"
-                self._error(code, problem)
-                return
 
         contentType, encoding = mimetypes.guess_type(path)
         filePath = os.getcwd() + '/web/' + path

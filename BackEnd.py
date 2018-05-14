@@ -10,6 +10,7 @@ try:
 except ImportError:
     import config_dist as config
 import re
+import threading
 
 import MulticastRxUniTx
 
@@ -181,9 +182,14 @@ def respond(path, params, fullPath, onLan = True):
         content = ''
         problem = ''
         logging.debug("Short status requested")
-        content = json.dumps(
-                channelStatDict
-        )
+        if not 'channelStatLock' in channelStatDict:
+            channelStatDict['channelStatLock'] = threading.Lock()
+        with channelStatDict['channelStatLock']:
+            channelStatDict['onLan'] = onLan
+            dictfilt = lambda x, y: dict([(i, x[i]) for i in x if i != y])
+            content = json.dumps(
+                dictfilt(channelStatDict, 'channelStatLock')
+            )
     else:
         content = ""
         code = 404

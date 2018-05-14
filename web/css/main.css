@@ -176,6 +176,10 @@ div.stat {
     transform: translate(-50%, -50%);
     box-shadow: 0em 0.5em 1em 0em rgba(0,0,0,0.2);
 }
+.geoShow {
+    visibility: visible !important;
+    opacity: 1 !important;
+}
 .geoWrapper {
   display: flex;
   align-items: center;
