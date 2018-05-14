@@ -230,5 +230,7 @@ def inRange(lat, lon):
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     d = config.HUB_WAN_LOCATION_EARTH_RADIUS_METERS * c
 
+    if config.HUB_WAN_LOCATION_RADIUS_METERS <= d:
+        logging.info("Attempt to connect from client %f meters away", d)
     return (config.HUB_WAN_LOCATION_RADIUS_METERS > d)
 
