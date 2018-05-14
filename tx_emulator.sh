@@ -1,6 +1,6 @@
 #!/bin/bash
 
-NUM_CHANS=10
+NUM_CHANS=2
 
 declare -g uuids=(
     0d77b5a0-4e76-464b-8085-e7d1c135d54a

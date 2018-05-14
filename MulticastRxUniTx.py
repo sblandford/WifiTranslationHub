@@ -440,19 +440,22 @@ def shortStatWorker():
     global channelStatDict
     global ended
 
+    if not 'channelStatLock' in channelStatDict:
+        channelStatDict['channelStatLock'] = threading.Lock()
     while not ended:
-        for i in range(0, config.MAX_CHANNELS):
-            if not i in channelStatDict:
-                channelStatDict[i] = {}
-            with privChannelDict['channels'][i]['lock']:
+        with channelStatDict['channelStatLock']:
+            for i in range(0, config.MAX_CHANNELS):
                 if not i in channelStatDict:
                     channelStatDict[i] = {}
-                if 'allowedIds' in channelDict['channels'][i]:
-                    channelStatDict[i]['allowedIds'] = channelDict['channels'][i]['allowedIds']
-                if 'busy' in channelDict['channels'][i]:
-                    channelStatDict[i]['busy'] = channelDict['channels'][i]['busy']
-                if 'valid' in channelDict['channels'][i]:
-                    channelStatDict[i]['valid'] = channelDict['channels'][i]['valid']
-                if 'name' in channelDict['channels'][i]:
-                    channelStatDict[i]['name'] = channelDict['channels'][i]['name']
+                with privChannelDict['channels'][i]['lock']:
+                    if not i in channelStatDict:
+                        channelStatDict[i] = {}
+                    if 'allowedIds' in channelDict['channels'][i]:
+                        channelStatDict[i]['allowedIds'] = channelDict['channels'][i]['allowedIds']
+                    if 'busy' in channelDict['channels'][i]:
+                        channelStatDict[i]['busy'] = channelDict['channels'][i]['busy']
+                    if 'valid' in channelDict['channels'][i]:
+                        channelStatDict[i]['valid'] = channelDict['channels'][i]['valid']
+                    if 'name' in channelDict['channels'][i]:
+                        channelStatDict[i]['name'] = channelDict['channels'][i]['name']
         time.sleep(1)
