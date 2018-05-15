@@ -266,7 +266,12 @@ def checkRange(params):
         problem = "Unable to assess if client is at venue"
     return code, problem
 
-def isLan(ip):
+def isLan(ips):
+    ip = ips
+    if isinstance(ips, (list,)):
+        for ip in ips:
+            if ip != "127.0.0.1":
+                break
     for ipRange in config.LAN_RANGES:
         net = ipaddress.ip_network(ipRange)
         if ipaddress.ip_address(ip) in net:
