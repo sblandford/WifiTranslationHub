@@ -268,8 +268,9 @@ def checkRange(params):
 
 def isLan(ips):
     ip = ips
-    if isinstance(ips, (list,)):
-        for ip in ips:
+    if len(ips.split(",")) > 1:
+        for ip in ips.split(","):
+            ip = ip.strip()
             if ip != "127.0.0.1":
                 break
     for ipRange in config.LAN_RANGES:
