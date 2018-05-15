@@ -267,12 +267,7 @@ def checkRange(params):
     return code, problem
 
 def isLan(ips):
-    ip = ips
-    if len(ips.split(",")) > 1:
-        for ip in ips.split(","):
-            ip = ip.strip()
-            if ip != "127.0.0.1":
-                break
+    ip = getSingleIp(ips)
     for ipRange in config.LAN_RANGES:
         net = ipaddress.ip_network(ipRange)
         if ipaddress.ip_address(ip) in net:
@@ -281,3 +276,16 @@ def isLan(ips):
         if ip == ipAddress:
             return True
     return False
+
+def rewritable(ips):
+    ip = getSingleIp(ips)
+    return ip in config.HUB_REWRITE_TO_LAN_URL
+
+def getSingleIp(ips):
+    ip = ips
+    if len(ips.split(",")) > 1:
+        for ip in ips.split(","):
+            ip = ip.strip()
+            if ip != "127.0.0.1":
+                break
+    return ip
