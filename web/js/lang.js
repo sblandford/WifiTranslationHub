@@ -6,7 +6,8 @@ var LANG = {
         "stop" : "Stop",
         "geoText" : "Permission is required to check your location",
         "geoYes" : "Confirm",
-        "geoNo" : "Decline"
+        "geoNo" : "Decline",
+        "outRange" : "Out of range"
     },
     "es" : {
         "select" : "Seleccionar",
@@ -15,7 +16,8 @@ var LANG = {
         "stop" : "Detener",
         "geoText" : "Se requiere permiso para verificar su ubicación",
         "geoYes" : "Aceptar",
-        "geoNo" : "Disminución"
+        "geoNo" : "Disminución",
+        "outRange" : "Fuera de rango"
     },
     "fr" : {
         "select" : "Sélectionnez",
@@ -24,7 +26,8 @@ var LANG = {
         "stop" : "Arrêtez",
         "geoText" : "Une permission est requise pour vérifier votre emplacement",
         "geoYes" : "Acceptez",
-        "geoNo" : "Déclin"
+        "geoNo" : "Déclin",
+        "outRange" : "Hors de portée"
     },
     "hi" : {
         "select" : "चुनते हैं",
@@ -33,7 +36,8 @@ var LANG = {
         "stop" : "रुकें",
         "geoText" : "आपके स्थान की जांच करने के लिए अनुमति की आवश्यकता है",
         "geoYes" : "स्वीकार करना",
-        "geoNo" : "पतन"
+        "geoNo" : "पतन",
+        "outRange" : "क्षेत्र के बहार"
     },
     "nl" : {
         "select" : "Kiezen",
@@ -42,7 +46,8 @@ var LANG = {
         "stop" : "Hou op",
         "geoText" : "Toestemming is vereist om uw locatie te controleren",
         "geoYes" : "Aanvaarden",
-        "geoNo" : "Afwijzen"
+        "geoNo" : "Afwijzen",
+        "outRange" : "Buiten bereik"
     },
     "pl" : {
         "select" : "Wybierz",
@@ -51,7 +56,8 @@ var LANG = {
         "stop" : "Zatrzymać",
         "geoText" : "Do sprawdzenia Twojej lokalizacji potrzebne jest pozwolenie",
         "geoYes" : "Zaakceptować",
-        "geoNo" : "Upadek"
+        "geoNo" : "Upadek",
+        "outRange" : "Poza zakresem"
     },
     "pt" : {
         "select" : "Selecione",
@@ -60,7 +66,8 @@ var LANG = {
         "stop" : "Pare",
         "geoText" : "A permissão é necessária para verificar sua localização",
         "geoYes" : "Aceitar",
-        "geoNo" : "Declínio"
+        "geoNo" : "Declínio",
+        "outRange" : "Fora de alcance"
     },
     "ta" : {
         "select" : "தேர்வு",
@@ -69,7 +76,8 @@ var LANG = {
         "stop" : "நிறுத்து",
         "geoText" : "உங்கள் இருப்பிடத்தைச் சரிபார்க்க அனுமதி தேவை",
         "geoYes" : "ஏற்கவும்",
-        "geoNo" : "சரிவு"
+        "geoNo" : "சரிவு",
+        "outRange" : "வரம்புக்கு வெளியே"
     }  
 }
 

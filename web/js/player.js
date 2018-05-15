@@ -12,6 +12,7 @@ var gAudioBufferTime = 0.3;
 var gFutureIncrement = 0.1;
 var gMaxChannels = 10;
 var gAppUrl = "https://play.google.com/store/apps/details?id=eu.bkwsu.webcast.wifitranslation";
+var gJsonpTimeout = 2000;
 
 var gPrevChannel = 0;
 var gPlaying = false;
@@ -30,10 +31,10 @@ var gMenuDisplayed = false;
 var gMenuBox = null;
 
 //Goelocation
-var gGeoActive = false;
-var gGeoRequired = false;
 var gGeoLat = null;
 var gGeoLon = null;
+var gGeoInRange = false;
+var gOnLan = false;
 
 
 function mobileAndTabletcheck () {
@@ -42,11 +43,11 @@ function mobileAndTabletcheck () {
     return check;
 }
 
-//JSONP loader by Gianni Chiappetta
+//Based on JSONP loader by Gianni Chiappetta
 //https://gist.github.com/gf3/132080
 var loadJSONP = (function(){
     var unique = 0;
-    return function(url, callback, context) {
+    return function(url, callback, errCallback, context) {
     // INIT
     var name = "jp" + unique++;
     if (url.match(/\?/)) url += "&callback="+name;
@@ -65,14 +66,35 @@ var loadJSONP = (function(){
         delete window[name];
     };
     
+    // Timeout (assume error)
+    setTimeout(function () {
+        expireJSONP(name, script, errCallback, context);
+    }, gJsonpTimeout);
+    
     // Load JSON
     document.getElementsByTagName('head')[0].appendChild(script);
   };
 })();
+function expireJSONP (name, script, errCallback, context) {
+    //If handler hasn't triggered then callback will still exist
+    if (window.hasOwnProperty(name)) {
+        if (errCallback) {
+            errCallback.call((context || window));
+        }
+        //Clean up
+        document.getElementsByTagName('head')[0].removeChild(script);
+        script = null;
+        delete window[name];
+    }
+}
+
 
 //Poll status every two seconds
 function pollStatus () {
-    pollGeo ();
+    //Quick polling until location known
+    if (!gOnLan && !gGeoLat) {
+        pollGeo ();
+    }
     loadJSONP(
         "/json/stat.json",
         function(newStatus) {
@@ -121,19 +143,23 @@ function updateDisplay() {
             var chNameId = document.getElementById("chName");
             var startStopButtonId = document.getElementById("startStopButton");
             chNameId.innerHTML = name;
-            if (status) {
-                if (chNameId.classList.contains('chNameDead')) {
-                    chNameId.classList.remove('chNameDead');
+            if (gOnLan || gGeoInRange || !gGeoLat) {
+                if (status) {
+                    if (chNameId.classList.contains('chNameDead')) {
+                        chNameId.classList.remove('chNameDead');
+                    }
+                    startStopButtonId.innerText = LANG[gLang][(gPlaying)?"stop":"start"];
+                    startStopButtonId.disabled = false;
+                } else {
+                    if (!chNameId.classList.contains('chNameDead')) {
+                        chNameId.classList.add('chNameDead');
+                    }
+                    startStopButtonId.innerText = (gPlaying)?LANG[gLang]["stop"]:"-";
+                    startStopButtonId.disabled = !gPlaying;
                 }
-                startStopButtonId.innerText = LANG[gLang][(gPlaying)?"stop":"start"];
-                startStopButtonId.disabled = false;
-                
             } else {
-                if (!chNameId.classList.contains('chNameDead')) {
-                    chNameId.classList.add('chNameDead');
-                }
-                startStopButtonId.innerText = (gPlaying)?LANG[gLang]["stop"]:"-";
-                startStopButtonId.disabled = !gPlaying;
+                startStopButtonId.innerText = LANG[gLang]["outRange"];
+                startStopButtonId.disabled = true;
             }
         }
     }
@@ -149,11 +175,6 @@ function updateDisplay() {
 function isNormalInteger(str) {
     return /^\+?(0|[1-9]\d*)$/.test(str);
 }
-
-/* TODO If status has "geo" property then location must be sent to host
- * The host then checks if location is in range and if so allows
- * packets to be sent
- */
 
 
 function readPackets () {
@@ -177,6 +198,10 @@ function readPackets () {
                 console.log("Next Seq available : " + seq);
                 readNextPacket(seq);
             }
+        },
+        function () {
+            stopPlayer();
+            updateDisplay();
         }
     );       
 }
@@ -545,10 +570,11 @@ function showQr() {
     boxDiv.classList.toggle("qrShow");
 }
 
-//Fetch coordinates if we have permission
+//Fetch coordinates if we have permission and we need to
 function pollGeo () {
+
     //Check if we have permissions and fetch if we don't already have
-    if (navigator.permissions && !gGeoLat) {
+    if (navigator.permissions) {
         navigator.permissions.query({name: 'geolocation'}).then(function(PermissionStatus) {
             if('granted' === PermissionStatus.state) {
                 getGeo ();
@@ -556,12 +582,42 @@ function pollGeo () {
         });
     }
 }
-
 function getGeo () {
     navigator.geolocation.getCurrentPosition(function(geoposition) {
+        var triggerPoll = false
+        if (!gGeoLat) {
+            triggerPoll = true
+        }
         gGeoLat = geoposition.coords.latitude;
         gGeoLon = geoposition.coords.longitude;
+        if (triggerPoll) {
+            pollLanRange();
+            updateDisplay();
+        }
     });
+}
+function pollLanRange () {
+    pollGeo ();
+    url = "/json/lanrange.json";
+    if (gGeoLat) {
+        url += "?lat=" + gGeoLat + "&lon=" + gGeoLon;
+    }    
+    loadJSONP(
+        url,
+        function(langRangeStat) {
+            var onLanPrev = gOnLan;
+            var geoInRangePrev = gGeoInRange;
+            if (langRangeStat.hasOwnProperty('onLan')) {
+                gOnLan = langRangeStat['onLan'];
+            }
+            if (langRangeStat.hasOwnProperty('inRange')) {
+                gGeoInRange = langRangeStat['inRange'];
+            }
+            if ((onLanPrev != gOnLan) || (geoInRangePrev != gGeoInRange)) {
+                updateDisplay();
+            }
+        }
+    );    
 }
 
 //Get user approval before browser also asks for approval
@@ -604,6 +660,8 @@ window.onload = function () {
     if (localStorage.isAndroid === "true" ) {
         document.getElementById("appDiv").classList.add("appShow");
     }
+    pollLanRange();
     pollStatus();
     setInterval(pollStatus, 2000);
+    setInterval(pollLanRange, 120000);
 }
