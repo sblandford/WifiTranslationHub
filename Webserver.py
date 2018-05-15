@@ -104,33 +104,26 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         channel, seq, path, params, ip = RTSPServerSession.urlDecode(str(self.path))
 
-        onLan = True
+        remoteIp = None
         for header in self.headers._headers:
             param, value = header
 
             if param == "X-Forwarded-For":
-                remoteIpPart = re.match("^[0-9]{1,3}\.[0-9]{1,3}", value)
-                if remoteIpPart:
-                    localIpPart = re.match("^[0-9]{1,3}\.[0-9]{1,3}", IpBroadcaster.ip)
-                    if localIpPart:
-                        if remoteIpPart.group() != localIpPart.group():
-                            onLan = False
+                remoteIp = value
+
+        if not remoteIp:
+            remoteIp, remotePort = self.client_address
+        onLan = BackEnd.isLan(remoteIp)
+
         if channel >= 0:
             if '/rtp/' in path:
                 #If we have a channel and a uuid parameter then register client and return seq number
                 if 'uuid' in params and len(params['uuid']) == config.UUID_LENGTH:
                     if not onLan:
-                        if 'lat' in params and 'lon' in params:
-                            try:
-                                lat = float(params['lat'])
-                                lon = float(params['lon'])
-                            except ValueError:
-                                self._error(400, "Malformed co-ordinates")
-                                return
-                            if not BackEnd.inRange(lat, lon):
-                                self._error(403, "Client out of range of venue")
-                        else:
-                            self._error(403, "Unable to access if client is at venue")
+                        code, problem = BackEnd.checkRange(params)
+                        if code != 200:
+                            self._error(code, problem)
+                            return
                     contentType = "application/javascript"
                     content = BackEnd.RtpRefesh(channel, params, onLan)
                     self._respond(contentType, bytearray(content, "utf8"))

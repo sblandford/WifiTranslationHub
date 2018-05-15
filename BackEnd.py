@@ -2,6 +2,7 @@
 
 __author__ = "Simon Blandford"
 
+import ipaddress
 import math
 import json
 import logging
@@ -35,6 +36,8 @@ def setupUuid(channelDictIn, channelStatDictIn):
     with lock:
         channelDict = channelDictIn
         channelStatDict = channelStatDictIn
+
+
 """
 API commands in GET variables (URL encoded):
 callback=<callbackname>, the JSONP callback name to use
@@ -185,17 +188,23 @@ def respond(path, params, fullPath, onLan = True):
         if not 'channelStatLock' in channelStatDict:
             channelStatDict['channelStatLock'] = threading.Lock()
         with channelStatDict['channelStatLock']:
-            channelStatDict['onLan'] = onLan
             dictfilt = lambda x, y: dict([(i, x[i]) for i in x if i != y])
             content = json.dumps(
                 dictfilt(channelStatDict, 'channelStatLock')
             )
+    elif "json/lanrange.json" in path:
+        code, problem = checkRange(params)
+        # If the problem is "out of range" then it is not a problem in this case
+        problem = ""
+        content = json.dumps ({'onLan': onLan, 'inRange': (code == 200) or onLan })
+        code = 200
     else:
         content = ""
         code = 404
         problem = "Not found"
 
     return code, problem, callback + '(' + content + ')', cacheSeconds
+
 
 def RtpRefesh (channel, params, onLan):
     callback = "parseResponse"
@@ -211,12 +220,14 @@ def RtpRefesh (channel, params, onLan):
     )
     return callback + '(' + content + ')'
 
+
 #Based on Java hashcode but with unsigned hex output
 def hash(s):
     h = 0
     for c in s:
         h = (31 * h + ord(c)) & 0xFFFFFFFF
     return format(abs(((h + 0x80000000) & 0xFFFFFFFF) - 0x80000000), 'x')
+
 
 #Calculate distance from venue centre from coordinates and return in range or not
 def inRange(lat, lon):
@@ -234,3 +245,30 @@ def inRange(lat, lon):
         logging.info("Attempt to connect from client %f meters away", d)
     return (config.HUB_WAN_LOCATION_RADIUS_METERS > d)
 
+
+def checkRange(params):
+    code = 200
+    problem = ""
+    if 'lat' in params and 'lon' in params:
+        try:
+            lat = float(params['lat'])
+            lon = float(params['lon'])
+        except ValueError:
+            code = 400
+            problem = "Malformed co-ordinates"
+            return code, problem
+        else:
+            if not inRange(lat, lon):
+                code = 403
+                problem = "Client out of range of venue"
+    else:
+        code = 403
+        problem = "Unable to assess if client is at venue"
+    return code, problem
+
+def isLan(ip):
+    for ipRange in config.LAN_RANGES:
+        net = ipaddress.ip_network(ipRange)
+        if ipaddress.ip_address(ip) in net:
+            return True
+    return False
