@@ -35,6 +35,7 @@ var gGeoLat = null;
 var gGeoLon = null;
 var gGeoInRange = false;
 var gOnLan = false;
+var gStartAfterGeo = false;
 
 
 function mobileAndTabletcheck () {
@@ -472,8 +473,9 @@ function buttonStatus () {
 
 function startPlayer() {
     //Do we need to get position
-    if (gStatus.hasOwnProperty('onLan') && !gStatus['onLan'] && !gGeoLat) {
+    if (!gOnLan && !gGeoLat) {
         var geoDiv = document.getElementById("geoBox");
+        gStartAfterGeo = true;
         geoDiv.classList.add("geoShow");
     } else {
         startPlayer2();
@@ -593,6 +595,10 @@ function getGeo () {
         if (triggerPoll) {
             pollLanRange();
             updateDisplay();
+        }
+        if (gStartAfterGeo) {
+            gStartAfterGeo = false;
+            startPlayer2();
         }
     });
 }
