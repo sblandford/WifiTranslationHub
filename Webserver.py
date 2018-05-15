@@ -91,6 +91,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def _error(self, code, message):
         self.send_error(code, message)
 
+    def _redirect(self, url):
+        self.send_response(301)
+        self.send_header("Location", url)
+        self.end_headers()
+
     def handle(self):
         try:
             http.server.BaseHTTPRequestHandler.handle(self)
@@ -113,6 +118,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         if not remoteIp:
             remoteIp, remotePort = self.client_address
+
+        if BackEnd.rewritable(remoteIp):
+            self._redirect(config.HUB_ACCESS_LAN_URL)
+            return
+
         onLan = BackEnd.isLan(remoteIp)
 
         if channel >= 0:
