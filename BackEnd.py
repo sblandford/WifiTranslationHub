@@ -271,4 +271,7 @@ def isLan(ip):
         net = ipaddress.ip_network(ipRange)
         if ipaddress.ip_address(ip) in net:
             return True
+    for ipAddress in config.HUB_CONSIDER_LAN_ADDRESSES:
+        if ip == ipAddress:
+            return True
     return False
