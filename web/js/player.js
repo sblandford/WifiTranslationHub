@@ -6,8 +6,27 @@ var gUpdateSeq = false;
 var seqTimer = false;
 var gCtx;
 
+//Packet capture
+var gNextSeqQry = -1;
+var gPktTime = -1;
+var gPkts = {};
+var gPktLifetime = 2000;
+var gPktRetry = 20;
+var gBuffStarted = false;
+var gBufferLoop = null;
+var gSeqUpdateLoop = null;
+var gSeq = -1;
+var gSeqArrived = -1;
+var gSeqUpdateTime = 60000;
+
+//Audio parameters
+var gDecodeLoop = null;
+var gAudioPacketBufferTime = 200;
+var gstartDecodeTimeStamp = null;
+var gDecodeTime = null;
+
 //Starting buffer time, can increase as required
-var gFutureTime = 0.5;
+var gFutureTime = 0.05;
 var gAudioBufferTime = 0.3;
 var gFutureIncrement = 0.1;
 var gMaxChannels = 10;
@@ -177,43 +196,148 @@ function isNormalInteger(str) {
     return /^\+?(0|[1-9]\d*)$/.test(str);
 }
 
-
-function readPackets () {
+function getNextSeq () {
     var channel = parseInt(localStorage.channel);
-
     var channelText = (channel <= 9)?("0" + channel):channel.toString();
     channelText = channelText.substr(channelText.length - 2);
     var url = "/rtp/" + channelText + "?uuid=" + localStorage.uuid;
-    
+
     if (gGeoLat) {
         url += "&lat=" + gGeoLat + "&lon=" + gGeoLon;
     }
-
     gUpdateSeq = false;
     loadJSONP(
         url,
         function(thisSeq) {
             if (thisSeq.hasOwnProperty("seq")) {
                 //Wait for next packet
-                var seq = (thisSeq["seq"] + 1 + (gPlayError?1:0)) & 0xFFFF;
+                var seq = (thisSeq["seq"] + 1) & 0xFFFF;
                 console.log("Next Seq available : " + seq);
-                readNextPacket(seq);
+                if (gSeq == -1) {
+                    testPacket (seq);
+                }
+                gNextSeqQry = seq;                
             }
         },
         function () {
             stopPlayer();
             updateDisplay();
         }
-    );       
+    );
+}
+
+//Measure the timecode difference between two packets
+function testPacket (seq) {
+    fetchNewPacket(seq, function (seq) {
+        if (pktValid(gPkts[seq])) {
+            var time1 = pktTimeCode(gPkts[seq]);
+            seq++;
+            fetchNewPacket(seq, function (seq) {
+                if (pktValid(gPkts[seq])) {
+                    var time2 = pktTimeCode(gPkts[seq]);
+                    gPktTime = time2 - time1;
+                    console.log("Packet time is : " + gPktTime + "ms");
+                    fillBuffer(seq);
+                    playBuffer(seq);
+                }
+            });
+        }
+    });
 }
 
 
-//Read RTP packets over HTTP
-function readNextPacket (seq) {
+function fillBuffer(seq) {
+    if (gPktTime < 0) {
+        return;
+    }
+    gSeq = seq;
+    gNextSeqQry = -1;
+    //Re-check seq number with server every minute
+    //Also refreshes UUID timeout for stats
+    gSeqUpdateLoop = setInterval(function() {
+        getNextSeq ();
+    }, gSeqUpdateTime);
+    //Just keep loading packets like crazy
+    gBufferLoop = setInterval(function() {
+        gSeq = (gSeq + 1) & 0xFFFF;
+        //If we have new sync for server use that
+        if (gNextSeqQry > 0) {
+            gSeq = gNextSeqQry;
+            gNextSeqQry = -1;
+        }
+        fetchNewPacket(gSeq);
+    }, gPktTime);    
+}
+
+function cmpSeq(a, b) {
+    if ((a & 0x8000) && !(b & 0x8000)) {
+        //b > a rollover
+        return false;
+    }
+    if (!(a & 0x8000) && (b & 0x8000)) {
+        //a > b rollover
+        return true;
+    }    
+    return (a > b);
+}
+
+function playBuffer(seq) {
+    var packetLag = Math.ceil(gAudioPacketBufferTime / gPktTime)
+    console.log("Playing behind by " + packetLag + " packets");
+    seq = (seq - packetLag) & 0xFFFF;
+    gDecodeLoop = setInterval(function() {
+        var seqPrev = seq;
+        
+        seq = (seq + 1) & 0xFFFF;
+        //This should happen but reset if it does
+        if (cmpSeq(seq, gSeq)) {
+            console.log("Resetting wayward audio seq from " + seq + " to " + (gSeq - packetLag));
+             seq = (gSeq - packetLag) & 0xFFFF;
+        }
+        //Pull back if polling too soon
+        if (cmpSeq(seq,gSeqArrived)) {
+            console.log("Audio polling queue to soon shifting seq from " + seq + " to " + (gSeqArrived - packetLag) & 0xFFFF);
+            seq = (gSeqArrived - packetLag) & 0xFFFF;
+        }
+        if (gPkts[seq]) {
+            playRtpPacket(gPkts[seq]);
+            //Delete last packet
+            if (gPkts.hasOwnProperty(seqPrev)) {
+                delete gPkts[seq];
+            }
+        } else {
+            if (seqPrev) {
+                //This isn't delete but will be picked up
+                //by lifetime expire
+                console.log("Filling in for missing packet : " + seq);
+                playRtpPacket(gPkts[seqPrev]);
+            }
+        }
+    }, gPktTime);           
+}
+
+function fetchNewPacket (seq, handler) {
+    //Create placeholder for received packet
+    gPkts[seq] = null;
+    //Create lifetime on placeholder
+    setTimeout(function () {
+        if (gPkts.hasOwnProperty(seq)) {
+            delete gPkts[seq];
+        }
+    }, gPktLifetime);
+    fetchPacket(seq, handler);
+}
+
+function fetchPacket (seq, handler) {
+    //Abort if packet has expired
+    if (!gPkts.hasOwnProperty(seq)) {
+        return
+    }
+    
     var req = new XMLHttpRequest();
     
+    //Create URL
     var channel = parseInt(localStorage.channel);
-
     var channelText = (channel <= 9)?("0" + channel):channel.toString();
     channelText = channelText.substr(channelText.length - 2);
     var url = "/rtp/" + channelText + "/" + seq;
@@ -221,77 +345,70 @@ function readNextPacket (seq) {
     console.log("Request seq : " + seq);
     req.onload = function () {
         if (req.status == 200) {
+            //Abort if packet placeholder has expired
+            if (!gPkts.hasOwnProperty(seq)) {
+                return;
+            }
+
             var arrayBuffer = req.response;
-
-            gSubsequentError = false;
-            if (arrayBuffer) {
-                gPacket = new Uint8Array(arrayBuffer);
-
-                if (gPacket && gPlaying) {
-                    //Only proceed if packet is for this channel
-                    var channel = parseInt(req.responseURL.match(/\/[0-9][0-9](\?|\/)/)[0].match(/[0-9][0-9]/)[0]);
-                    if (channel == channel) {
-                        playRtpPacket(gPacket);
+            
+            //Abort if no data
+            if (!arrayBuffer) {
+                return
+            }
+            
+            var packet = new Uint8Array(arrayBuffer);
+            
+            if (packet) {
+                //Only proceed if packet is for this channel
+                var channel = parseInt(req.responseURL.match(/\/[0-9][0-9](\?|\/)/)[0].match(/[0-9][0-9]/)[0]);
+                if (channel == channel) {
+                    gPkts[seq] = packet;
+                    //Most recently arrived packet
+                    if (seq > gSeqArrived) {
+                        gSeqArrived = seq;
                     }
-                }
-                
-                //Next gPacket
-                if (gPlaying) {
-                    if (gUpdateSeq) {
-                        //Query next packet
-                        readPackets();
-                    } else {
-                        //Calculate next packet
-                        seq = (seq + 1) & 0xFFFF;
-                        readNextPacket(seq);
+                    if (handler) {
+                        handler(seq);
                     }
                 }
             }
         } else {
-            badPacket();
+            retryPacket();
         }
     };
     //Try again after time
     req.onerror = function () {
-        badPacket();
+        retryPacket(seq);
     };
 
     req.responseType = "arraybuffer";
     req.open("GET", url);
     req.setRequestHeader("Cache-Control","");
     req.setRequestHeader("pragma","");
-    req.send();
-    
+    req.send();    
+}
+function retryPacket (seq) {
+    //Retry packet after delay if still valid
+    if (gPkts.hasOwnProperty(seq)) {
+        setTimeout(function () {
+            console.log("Retrying packet : " + seq);
+            fetchPacket(seq);
+        }, gPktRetry);        
+    }
 }
 
-function badPacket () {
-    if (gPlaying) {
-        if (gSubsequentError) {
-            setTimeout(function () {
-                readPackets();
-            }, 1000);
-        } else {
-            reallyBad = true;
-            gPlayError = true;
-            readPackets();
-        }
-    }
-    gPlayError = true;
-}
 
 function playRtpPacket(gPacket) {
     
     var timePresentation;
     if (gPlaying) {        
         //Quit if this doesn't look like a valid AMR RTP packet
-        if ((gPacket[0] != 0x80) && (gPacket[1] != 0xE1)) {
+        if (!pktValid(gPacket)) {
             return;
         }
         
-        var rtpTimeCode = (gPacket[4] << 24) + (gPacket[5] << 16) + (gPacket[6] << 8) + gPacket[7];
-        
-        //Sample rate is always 16000 Hz
-        var timeRtpMsNow = (rtpTimeCode / 16);
+        var timeRtpMsNow = pktTimeCode (gPacket);
         if ((!gTimeMsRtpStart || gPlayError) && gPlaying) {
             gTimeMsRtpStart = timeRtpMsNow;
             gTimeCtxRtpOffset = gCtx.currentTime;
@@ -305,9 +422,21 @@ function playRtpPacket(gPacket) {
         }
         var timeRtp = ((timeRtpMsNow - gTimeMsRtpStart) / 1000.0) + gTimeCtxRtpOffset;
     
-    
+        if (!gstartDecodeTimeStamp) {
+            gstartDecodeTimeStamp = (new Date).getTime();
+        }
         gAmrwbWorker.postMessage([gPacket, timeRtp]);
     }
+}
+
+function pktValid(packet) {
+    //Valid AMR-WB packet?
+    return (packet && ((packet[0] == 0x80) && (packet[1] == 0xE1)))
+}
+function pktTimeCode (packet) {
+    var rtpTimeCode = (packet[4] << 24) + (packet[5] << 16) + (packet[6] << 8) + packet[7];
+    //AMR-WB sample rate is always 16000 Hz
+    return (rtpTimeCode / 16);    
 }
 
 function playPcm(samples, timeRtp) {
@@ -361,6 +490,15 @@ function playPcm(samples, timeRtp) {
 }
 
 gAmrwbWorker.onmessage = function (e) {
+    if (gstartDecodeTimeStamp) {
+        gDecodeTime = ((new Date).getTime() - gstartDecodeTimeStamp) / 1000.0;
+        
+        if (gDecodeTime > (gFutureTime / 2)) {
+            console.log("Increasing audio DSP time allocation from " + gFutureTime + " by " + gFutureIncrement);
+            gFutureTime += gFutureIncrement;
+        }
+    }
+    gstartDecodeTimeStamp = null;
     var samples = e.data[0];
     var timeRtp = e.data[1];
     playPcm(samples, timeRtp);
@@ -498,18 +636,20 @@ function startPlayer2 () {
         source.start();
     }
     
-    //Start the sequence query timer to ping every minute
-    gUpdateSeq = false;
-    seqTimer = setInterval(function() {
-        gUpdateSeq = true;
-    }, 60 * 1000); 
-
     playPcm.buffer = new Float32Array(0);
-    readPackets();    
+    
+    gSeq = -1;
+    getNextSeq ();
+    
+     
+    //readPackets();   
 }
 
 function stopPlayer() {
     gPlaying = false;
+    gNextSeqQry = -1;
+    gPktTime = -1;    
+    
     if (seqTimer) {
         clearInterval(seqTimer);
         seqTimer = false;
@@ -518,6 +658,15 @@ function stopPlayer() {
         gCtx.close();
         gCtx = null;
     }
+    
+    //Stop packet reading loops
+    clearInterval(gBufferLoop);
+    clearInterval(gSeqUpdateLoop);
+    clearInterval(gDecodeLoop);
+    gBufferLoop = null;
+    gSeqUpdateLoop = null;
+    gDecodeLoop = null;
+    
     gPacket = null;
     gTimeMsRtpStart = null;
 
