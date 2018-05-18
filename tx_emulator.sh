@@ -1,6 +1,9 @@
 #!/bin/bash
 
-NUM_CHANS=2
+#Default. Over-ridden by value in config.py, config_dist.py if found
+MAX_CHANNELS=10
+
+PKT_SIZE=500
 
 declare -g uuids=(
     0d77b5a0-4e76-464b-8085-e7d1c135d54a
@@ -46,7 +49,7 @@ send_audio () {
     bitrate=${bitrates[quality]}
     
 
-    ffmpeg -re -f lavfi -i "sine=frequency=$freq:sample_rate=16000" -c:a libvo_amrwbenc -b:a $bitrate -f rtp rtp://@228.227.226.$(( 225 + channel )):1234?pkt_size=200
+    ffmpeg -re -f lavfi -i "sine=frequency=$freq:sample_rate=16000" -c:a libvo_amrwbenc -b:a $bitrate -f rtp rtp://@228.227.226.$(( 225 + channel )):1234?pkt_size=$PKT_SIZE
 }
 
 send_uuid () {
@@ -54,7 +57,7 @@ send_uuid () {
     channel=$1
     set=$2
     
-    uuid_index=$(( channel + (NUM_CHANS * set) ))
+    uuid_index=$(( channel + (MAX_CHANNELS * set) ))
     
     touch /tmp/$( basename "$0" ).run
     
@@ -75,6 +78,10 @@ cleanup () {
     exit
 }
 
+function get_num_chans () {
+    [ -f $1 ] && grep -E "^[^#]*MAX_CHANNELS" "$1" | grep -oE "[0-9]+[[:space:]]*$"
+}
+
 trap cleanup SIGINT
 
 stop_all
@@ -83,13 +90,21 @@ if [[ "$1" == "stop" ]]; then
   cleanup
 fi
 
+if [ -f "config.py" ]; then
+    MAX_CHANNELS=$( get_num_chans "config.py" )
+else
+    if [ -f "config_dist.py" ]; then
+        MAX_CHANNELS=$( get_num_chans "config_dist.py" )
+    fi
+fi
+
 setnum=0
 if echo "$1" | grep -Eq "^[0-2]$"; then
   setnum=$1
   echo "Set number $setnum"
 fi
 
-for (( i=0; i<10; i++ )); do
+for (( i=0; i<$MAX_CHANNELS; i++ )); do
     send_audio $i $(( 432 + (i * 100) )) $(( i % 9 )) &>/dev/null &
     send_uuid $i $setnum &>/dev/null &
 done

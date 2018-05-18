@@ -10,14 +10,21 @@ var gCtx;
 var gNextSeqQry = -1;
 var gPktTime = -1;
 var gPkts = {};
+var gPktFails = 0;
+var gMaxPktFails = 20;
 var gPktLifetime = 2000;
 var gPktRetry = 20;
 var gBuffStarted = false;
 var gBufferLoop = null;
 var gSeqUpdateLoop = null;
+var gWatchDogTmr = null;
+var gWatchDogInterval = 2000;
 var gSeq = -1;
 var gSeqArrived = -1;
+var gMaxSeqOops = 10;
 var gSeqUpdateTime = 60000;
+var gSeqStatCount = 10;
+var gWatchDogOK = true;
 
 //Audio parameters
 var gDecodeLoop = null;
@@ -28,7 +35,7 @@ var gDecodeTime = null;
 //Starting buffer time, can increase as required
 var gFutureTime = 0.05;
 var gAudioBufferTime = 0.3;
-var gFutureIncrement = 0.1;
+var gFutureIncrement = 0.01;
 var gMaxChannels = 10;
 var gAppUrl = "https://play.google.com/store/apps/details?id=eu.bkwsu.webcast.wifitranslation";
 var gJsonpTimeout = 2000;
@@ -67,9 +74,12 @@ function mobileAndTabletcheck () {
 //https://gist.github.com/gf3/132080
 var loadJSONP = (function(){
     var unique = 0;
-    return function(url, callback, errCallback, context) {
+    return function(url, callback, errCallback, context, callbackName) {
     // INIT
     var name = "jp" + unique++;
+    if (callbackName) {
+        name = callbackName;
+    }
     if (url.match(/\?/)) url += "&callback="+name;
     else url += "?callback="+name;
     
@@ -102,7 +112,11 @@ function expireJSONP (name, script, errCallback, context) {
             errCallback.call((context || window));
         }
         //Clean up
-        document.getElementsByTagName('head')[0].removeChild(script);
+        try {
+            document.getElementsByTagName('head')[0].removeChild(script);
+        } catch (err) {
+            ;//Pass
+        }
         script = null;
         delete window[name];
     }
@@ -123,9 +137,28 @@ function pollStatus () {
                 gStatus = newStatus;
                 gStatusUpdate = true;
                 updateDisplay();
+                if (!checkStreamOK) {
+                    stopPlayer();
+                    updateDisplay();
+                }
             }
-        }
+        }, null, null, "jpstat"
     );
+}
+
+function checkStreamOK () {
+    var channel = parseInt(localStorage.channel);
+    return (gStatus.hasOwnProperty[channel] && gStatus[channel].hasOwnProperty['valid'] && gStatus[channel]['valid']);
+}
+
+function watchDog () {
+    gWatchDogTmr = setInterval(function () {
+        if (!gWatchDogOK) {
+            stopPlayer();
+            updateDisplay();
+        }
+        gWatchDogOK = false;
+    }, gWatchDogInterval);
 }
 
 function updateDisplay() {
@@ -216,6 +249,12 @@ function getNextSeq () {
                 if (gSeq == -1) {
                     testPacket (seq);
                 }
+                //Panic if wildly wrong
+                if ((gSeq != -1) && diffSeq(gNextSeqQry, seq) > gMaxSeqOops) {
+                    console.log("Large difference between calculated and actual seq");
+                    stopPlayer();
+                    updateDisplay();
+                }
                 gNextSeqQry = seq;                
             }
         },
@@ -239,6 +278,7 @@ function testPacket (seq) {
                     console.log("Packet time is : " + gPktTime + "ms");
                     fillBuffer(seq);
                     playBuffer(seq);
+                    watchDog();
                 }
             });
         }
@@ -266,53 +306,121 @@ function fillBuffer(seq) {
             gNextSeqQry = -1;
         }
         fetchNewPacket(gSeq);
-    }, gPktTime);    
+    }, gPktTime);
 }
 
-function cmpSeq(a, b) {
-    if ((a & 0x8000) && !(b & 0x8000)) {
-        //b > a rollover
+//Returns true if sequence number a > b, or a >= b
+//Assumes that both a and b are incrementing counters
+//closely following each other
+function cmpSeq(a, b, isEqual = false) {
+    if ((a & 0x8000) && !(b & 0xC000)) {
+        //b > a rollover assumed
         return false;
     }
-    if (!(a & 0x8000) && (b & 0x8000)) {
-        //a > b rollover
+    if (!(a & 0xC000) && (b & 0x8000)) {
+        //a > b rollover assumed
         return true;
-    }    
-    return (a > b);
+    }
+    return (isEqual)?(a >= b):(a > b);
+}
+
+function diffSeq(a, b) {
+    if ((a & 0x8000) && !(b & 0xC000)) {
+        //b > a rollover assumed
+        b += 0x10000;
+    }
+    if (!(a & 0xC000) && (b & 0x8000)) {
+        //a > b rollover assumed
+         a += 0x10000;
+    }
+    return Math.abs(a - b);
 }
 
 function playBuffer(seq) {
     var packetLag = Math.ceil(gAudioPacketBufferTime / gPktTime)
+    var statCounter = 0;
+    var nextFail = false;
+    var futureFail = false;
+    var currentFail = false;
+    var reSync = false;
     console.log("Playing behind by " + packetLag + " packets");
     seq = (seq - packetLag) & 0xFFFF;
     gDecodeLoop = setInterval(function() {
         var seqPrev = seq;
+        var seqPrevOk = ((gPkts.hasOwnProperty(seqPrev) && gPkts[seqPrev]) != false);
         
         seq = (seq + 1) & 0xFFFF;
+        
         //This should happen but reset if it does
-        if (cmpSeq(seq, gSeq)) {
+        /*if (cmpSeq(seq, gSeq, true)) {
             console.log("Resetting wayward audio seq from " + seq + " to " + (gSeq - packetLag));
              seq = (gSeq - packetLag) & 0xFFFF;
-        }
+        }*/
         //Pull back if polling too soon
-        if (cmpSeq(seq,gSeqArrived)) {
+        /*if (cmpSeq(seq, gSeqArrived)) {
             console.log("Audio polling queue to soon shifting seq from " + seq + " to " + (gSeqArrived - packetLag) & 0xFFFF);
             seq = (gSeqArrived - packetLag) & 0xFFFF;
+        }*/
+        var seqOK = ((gPkts.hasOwnProperty(seq) && gPkts[seq]) != false);
+        var seqNext = (seq + 2) & 0xFFFF;
+        var seqNextOk = ((gPkts.hasOwnProperty(seqNext) && gPkts[seqNext]) != false);
+        var seqFuture = (seq + 3) & 0xFFFF;
+        var seqFutureOk = ((gPkts.hasOwnProperty(seqFuture) && gPkts[seqFuture]) != false);
+        
+        if (!seqNextOk) {
+            nextFail = true;
         }
-        if (gPkts[seq]) {
-            playRtpPacket(gPkts[seq]);
+        if (!seqFutureOk) {
+            futureFail = true;
+        }
+
+        console.log ((seqPrevOk | 0) + " " + (seqOK | 0) + " " + (seqNextOk| 0) + " " + (seqFutureOk| 0) + ", Seq : " + seq + ", Available : " + gSeqArrived );
+        if (seqOK) {
+            playRtpPacket(gPkts[seq], reSync);
+            //Clear reSync flag
+            reSync = false;
             //Delete last packet
             if (gPkts.hasOwnProperty(seqPrev)) {
-                delete gPkts[seq];
+                delete gPkts[seqPrev];
             }
         } else {
-            if (seqPrev) {
+            currentFail = true;
+            if (seqPrevOk) {
                 //This isn't delete but will be picked up
                 //by lifetime expire
-                console.log("Filling in for missing packet : " + seq);
+                pokePktTimeCode(gPkts[seqPrev], (seqPrev - seq));
+                console.log("Filling in for missing packet : " + seq + " with " + seqPrev);
                 playRtpPacket(gPkts[seqPrev]);
             }
         }
+        //Evaluate stats
+        if (statCounter++ > gSeqStatCount) {
+            statCounter = 0;
+            
+            //Increase lag if problems or potential problems occured
+            if (currentFail || nextFail) {
+                console.log("Increasing buffer length by 1");
+                seq = (seq - 1) & 0xFFFF;
+                reSync = true;
+            } else {           
+                //Decrease lag if safe to do so
+                if (!futureFail && ((gSeq - seq) > 1)) {
+                    console.log("Decreasing buffer length by 1");
+                    if (seqOK) {
+                        console.log("Filling in for missing packet : " + (seq + 1) + " with " + seq);
+                        pokePktTimeCode(gPkts[seq], 1);
+                        playRtpPacket(gPkts[seq]);
+                    }
+                    seq = (seq + 1) & 0xFFFF;
+                    reSync = true;
+                }
+            }
+            currentFail = false;
+            nextFail = false;
+            futureFail = false;
+        }
+        
+        
     }, gPktTime);           
 }
 
@@ -363,8 +471,13 @@ function fetchPacket (seq, handler) {
                 //Only proceed if packet is for this channel
                 var channel = parseInt(req.responseURL.match(/\/[0-9][0-9](\?|\/)/)[0].match(/[0-9][0-9]/)[0]);
                 if (channel == channel) {
+                    gPktFails = 0;
                     gPkts[seq] = packet;
                     //Most recently arrived packet
+                    if (cmpSeq(seq, gSeqArrived) > gMaxSeqOops) {
+                        console.log("Massive calculed seq: " + seq + " vs available seq : " + gSeqArrived);
+                        gSeqArrived = seq;
+                    }
                     if (seq > gSeqArrived) {
                         gSeqArrived = seq;
                     }
@@ -391,6 +504,11 @@ function fetchPacket (seq, handler) {
 function retryPacket (seq) {
     //Retry packet after delay if still valid
     if (gPkts.hasOwnProperty(seq)) {
+        if (gPktFails++ > gMaxPktFails) {
+            console.log("Too many consecutive bad packets");
+            stopPlayer();
+            updateDisplay();
+        }
         setTimeout(function () {
             console.log("Retrying packet : " + seq);
             fetchPacket(seq);
@@ -399,7 +517,7 @@ function retryPacket (seq) {
 }
 
 
-function playRtpPacket(gPacket) {
+function playRtpPacket(gPacket, reSync = false) {
     
     var timePresentation;
     if (gPlaying) {        
@@ -409,7 +527,7 @@ function playRtpPacket(gPacket) {
         }
         
         var timeRtpMsNow = pktTimeCode (gPacket);
-        if ((!gTimeMsRtpStart || gPlayError) && gPlaying) {
+        if ((!gTimeMsRtpStart || gPlayError || reSync) && gPlaying) {
             gTimeMsRtpStart = timeRtpMsNow;
             gTimeCtxRtpOffset = gCtx.currentTime;
         }
@@ -435,8 +553,21 @@ function pktValid(packet) {
 }
 function pktTimeCode (packet) {
     var rtpTimeCode = (packet[4] << 24) + (packet[5] << 16) + (packet[6] << 8) + packet[7];
-    //AMR-WB sample rate is always 16000 Hz
+    //Magic number 16 is because AMR-WB sample rate is always 16000 Hz
     return (rtpTimeCode / 16);    
+}
+function pokePktTimeCode (packet, seqOffset) {
+    var rtpTimeCode = (packet[4] << 24) + (packet[5] << 16) + (packet[6] << 8) + packet[7];
+    //Magic number 16 is because AMR-WB sample rate is always 16000 Hz
+    var offset = seqOffset * gPktTime * 16;
+    
+    rtpTimeCode += offset;
+    
+    //Insert new timecode
+    packet[4] = rtpTimeCode >> 24;
+    packet[5] = (rtpTimeCode >> 16) & 0xFF;
+    packet[6] = (rtpTimeCode >> 8) & 0xFF;
+    packet[7] = rtpTimeCode & 0xFF;
 }
 
 function playPcm(samples, timeRtp) {
@@ -466,6 +597,7 @@ function playPcm(samples, timeRtp) {
                 out[i + 1] = int16sample & 255
             }
             document.getElementById("out").innerHTML = toHex(out, 48);*/
+            gWatchDogOK = true;
             gPlayError = false;
 
             if (!timePresentation) {
@@ -556,7 +688,6 @@ function ontouchendChannel(channel) {
         localStorage.channel = channel;
         updateDisplay();
         if (gPlaying) {
-            stopPlayer();
             startPlayer(localStorage.channel);
         }
     }
@@ -610,6 +741,8 @@ function buttonStatus () {
 //setInterval(buttonStatus, 500);
 
 function startPlayer() {
+    //Kill any existing players
+    stopPlayer();
     //Do we need to get position
     if (!gOnLan && !gGeoLat) {
         var geoDiv = document.getElementById("geoBox");
@@ -641,7 +774,6 @@ function startPlayer2 () {
     gSeq = -1;
     getNextSeq ();
     
-     
     //readPackets();   
 }
 
@@ -663,9 +795,11 @@ function stopPlayer() {
     clearInterval(gBufferLoop);
     clearInterval(gSeqUpdateLoop);
     clearInterval(gDecodeLoop);
+    clearInterval(gWatchDogTmr);
     gBufferLoop = null;
     gSeqUpdateLoop = null;
     gDecodeLoop = null;
+    gWatchDogTmr = null;
     
     gPacket = null;
     gTimeMsRtpStart = null;
