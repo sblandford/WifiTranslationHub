@@ -37,6 +37,10 @@ var gGeoInRange = false;
 var gOnLan = false;
 var gStartAfterGeo = false;
 
+var gPlayTimeout;
+var gPlayTimeoutMs = 1000 * 60 * 60 * 2; // 2 hours
+
+
 
 function mobileAndTabletcheck () {
     var check = false;
@@ -505,14 +509,21 @@ function startPlayer2 () {
     }, 60 * 1000); 
 
     playPcm.buffer = new Float32Array(0);
-    readPackets();    
+    readPackets();
+    
+    //Stop player eventually to prevent forgotten app using too much data
+    gPlayTimeout = setTimeout(function () {
+        console.log("Player time out after " + (gPlayTimeoutMs / (1000 * 60 * 60)) + " hours");
+        stopPlayer();
+        updateDisplay();
+    }, gPlayTimeoutMs);
 }
 
 function stopPlayer() {
     gPlaying = false;
     if (seqTimer) {
         clearInterval(seqTimer);
-        seqTimer = false;
+        seqTimer = null;
     }
     if (gCtx) {
         gCtx.close();
@@ -526,6 +537,11 @@ function stopPlayer() {
     
     gPlayError = false;
     gAmrwbWorker.postMessage([null, null]);
+    
+    if (gPlayTimeout) {
+        clearInterval(gPlayTimeout);
+        gPlayTimeout = null;
+    }
 }
 
 //Drop down menu related
