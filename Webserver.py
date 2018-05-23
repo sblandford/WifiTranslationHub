@@ -70,6 +70,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         #Timeout causes Android to only partially load pages ??
         #self.timeout = 30.0
         http.server.BaseHTTPRequestHandler.__init__(self, request, client_address, server)
+        self.protocol_version = "HTTP/1.1"
 
     def log_message(self, format, *args):
         #Filter out timeout and 200 messages
@@ -85,6 +86,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         else:
             self.send_header("Cache-Control", "max-age=" + str(cacheSeconds))
         self.send_header("Content-type", contentType)
+        self.send_header("Content-length", len(binContent))
         self.end_headers()
         self.wfile.write(binContent)
 
