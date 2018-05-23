@@ -94,7 +94,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.send_error(code, message)
 
     def _redirect(self, url):
-        self.send_response(301)
+        self.send_response(307)
         self.send_header("Location", url)
         self.end_headers()
 
