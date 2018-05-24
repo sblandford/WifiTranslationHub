@@ -281,11 +281,9 @@ def rewritable(ips):
     ip = getSingleIp(ips)
     return ip in config.HUB_REWRITE_TO_LAN_URL
 
+#First IP is the one we want
 def getSingleIp(ips):
     ip = ips
     if len(ips.split(",")) > 1:
-        for ip in ips.split(","):
-            ip = ip.strip()
-            if ip != "127.0.0.1":
-                break
+        ip = ips.split(",")[0]
     return ip
