@@ -482,7 +482,10 @@ function startPlayer() {
         gStartAfterGeo = true;
         geoDiv.classList.add("geoShow");
     } else {
-        startPlayer2();
+        //1 second delay to allow any sotp player to action
+        setTimeout(function () {
+            startPlayer2();
+        }, 1000);
     }
 }
 
