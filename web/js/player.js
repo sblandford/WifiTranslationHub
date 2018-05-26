@@ -689,4 +689,5 @@ window.onload = function () {
     pollStatus();
     setInterval(pollStatus, 2000);
     setInterval(pollLanRange, 120000);
+    setInterval(updateDisplay, 1000);
 }
