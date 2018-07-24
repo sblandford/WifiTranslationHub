@@ -12,7 +12,7 @@ var gPktTime = -1;
 var gPkts = {};
 var gPktFails = 0;
 var gMaxPktFails = 20;
-var gPktLifetime = 2000;
+var gPktLifetime = 1000;
 var gPktRetry = 20;
 var gBuffStarted = false;
 var gBufferLoop = null;
@@ -38,7 +38,7 @@ var gAudioBufferTime = 0.3;
 var gFutureIncrement = 0.01;
 var gMaxChannels = 10;
 var gAppUrl = "https://play.google.com/store/apps/details?id=eu.bkwsu.webcast.wifitranslation";
-var gJsonpTimeout = 2000;
+var gJsonpTimeout = 500;
 
 var gPrevChannel = 0;
 var gPlaying = false;
@@ -84,8 +84,11 @@ var loadJSONP = (function(){
     if (callbackName) {
         name = callbackName;
     }
-    if (url.match(/\?/)) url += "&callback="+name;
-    else url += "?callback="+name;
+    if (url.match(/\?/)) {
+        url += "&callback="+name;
+    } else {
+        url += "?callback="+name;
+    }
     
     // Create script
     var script = document.createElement('script');
@@ -431,12 +434,6 @@ function playBuffer(seq) {
 function fetchNewPacket (seq, handler) {
     //Create placeholder for received packet
     gPkts[seq] = null;
-    //Create lifetime on placeholder
-    setTimeout(function () {
-        if (gPkts.hasOwnProperty(seq)) {
-            delete gPkts[seq];
-        }
-    }, gPktLifetime);
     fetchPacket(seq, handler);
 }
 
@@ -498,11 +495,17 @@ function fetchPacket (seq, handler) {
     req.onerror = function () {
         retryPacket(seq);
     };
+    req.ontimeout = function () {
+        if (gPkts.hasOwnProperty(seq)) {
+            delete gPkts[seq];
+        }        
+    }
 
     req.responseType = "arraybuffer";
     req.open("GET", url);
     req.setRequestHeader("Cache-Control","");
     req.setRequestHeader("pragma","");
+    req.timeout = gPktLifetime;
     req.send();    
 }
 function retryPacket (seq) {
