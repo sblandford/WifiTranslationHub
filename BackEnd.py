@@ -221,7 +221,7 @@ def RtpRefesh (channel, params, onLan):
     return callback + '(' + content + ')'
 
 
-#Based on Java hashcode but with unsigned hex output
+# Based on Java hashcode but with unsigned hex output
 def hash(s):
     h = 0
     for c in s:
@@ -229,8 +229,12 @@ def hash(s):
     return format(abs(((h + 0x80000000) & 0xFFFFFFFF) - 0x80000000), 'x')
 
 
-#Calculate distance from venue centre from coordinates and return in range or not
+# Calculate distance from venue centre from coordinates and return in range or not
 def inRange(lat, lon):
+    # If no range specified then range testing is disabled
+    if config.HUB_WAN_LOCATION_RADIUS_METERS == 0:
+        return True
+
     radLat = math.radians(lat)
     radVenueLat = math.radians(config.HUB_WAN_LOCATION_LATITUDE_DEGREES)
     deltaLat = math.radians(config.HUB_WAN_LOCATION_LATITUDE_DEGREES - lat)
