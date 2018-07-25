@@ -437,6 +437,14 @@ function fetchNewPacket (seq, handler) {
     fetchPacket(seq, handler);
 }
 
+function packetFail () {
+    if (gPktFails++ > gMaxPktFails) {
+        console.log("Too many consecutive bad packets");
+        stopPlayer();
+        updateDisplay();
+    }
+}
+
 function fetchPacket (seq, handler) {
     //Abort if packet has expired
     if (!gPkts.hasOwnProperty(seq)) {
@@ -499,6 +507,7 @@ function fetchPacket (seq, handler) {
         if (gPkts.hasOwnProperty(seq)) {
             delete gPkts[seq];
         }        
+        packetFail();
     }
 
     req.responseType = "arraybuffer";
@@ -511,11 +520,7 @@ function fetchPacket (seq, handler) {
 function retryPacket (seq) {
     //Retry packet after delay if still valid
     if (gPkts.hasOwnProperty(seq)) {
-        if (gPktFails++ > gMaxPktFails) {
-            console.log("Too many consecutive bad packets");
-            stopPlayer();
-            updateDisplay();
-        }
+        packetFail();
         setTimeout(function () {
             console.log("Retrying packet : " + seq);
             fetchPacket(seq);
