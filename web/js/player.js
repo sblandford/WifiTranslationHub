@@ -260,6 +260,7 @@ function getNextSeq () {
                 if ((gSeq != -1) && diffSeq(gNextSeqQry, seq) > gMaxSeqOops) {
                     console.log("Large difference between calculated and actual seq");
                     stopPlayer();
+                    startPlayer();
                     updateDisplay();
                 }
                 gNextSeqQry = seq;                
@@ -267,6 +268,7 @@ function getNextSeq () {
         },
         function () {
             stopPlayer();
+            startPlayer();
             updateDisplay();
         }
     );
@@ -441,6 +443,7 @@ function packetFail () {
     if (gPktFails++ > gMaxPktFails) {
         console.log("Too many consecutive bad packets");
         stopPlayer();
+        startPlayer();
         updateDisplay();
     }
 }
