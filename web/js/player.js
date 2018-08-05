@@ -42,7 +42,7 @@ var gJsonpTimeout = 500;
 var gPrevChannel = 0;
 var gPlaying = false;
 var gSubsequentError = false;
-var gPrevPlaying = false;
+var gPrevPlayIntention = false;
 var gPlayError = false;
 var gPrevPlayError = false;
 var gLang = window.navigator.language.substring(0,2);
@@ -63,8 +63,12 @@ var gOnLan = false;
 var gStartAfterGeo = false;
 
 
+//State
 var gPlayTimeout;
 var gPlayTimeoutMs = 1000 * 60 * 60 * 2; // 2 hours
+var gPlayIntention = false;
+var gPlayerHope = false;
+var gEnacting = false;
 
 
 function mobileAndTabletcheck () {
@@ -144,15 +148,25 @@ function pollStatus () {
                 gStatusUpdate = true;
                 updateDisplay();
                 if (!checkStreamOK) {
-                    stopPlayer();
+                    fullStopPlayer();
                     updateDisplay();
                 }
             }
         }, null, null, "jpstat"
     );
+    //Get player into intended state
+    if (gPlayIntention && !gPlaying && !gEnacting) {
+        startPlayer();
+        updateDisplay();
+    }
+    if (!gPlayIntention && gPlaying && !gEnacting) {
+        stopPlayer();
+        updateDisplay();
+    }
 }
 
 function checkStreamOK () {
+    //Check channel is still valid and in range
     var channel = parseInt(localStorage.channel);
     return (gStatus.hasOwnProperty[channel] && gStatus[channel].hasOwnProperty['valid'] && gStatus[channel]['valid']);
 }
@@ -161,7 +175,7 @@ function watchDog () {
     if (!gWatchDogTmr) {
         gWatchDogTmr = setInterval(function () {
             if (!gWatchDogOK) {
-                stopPlayer();
+                fullStopPlayer();
                 updateDisplay();
             }
             gWatchDogOK = false;
@@ -209,14 +223,14 @@ function updateDisplay() {
                     if (chNameId.classList.contains('chNameDead')) {
                         chNameId.classList.remove('chNameDead');
                     }
-                    startStopButtonId.innerText = LANG[gLang][(gPlaying)?"stop":"start"];
+                    startStopButtonId.innerText = LANG[gLang][(gPlayIntention)?"stop":"start"];
                     startStopButtonId.disabled = false;
                 } else {
                     if (!chNameId.classList.contains('chNameDead')) {
                         chNameId.classList.add('chNameDead');
                     }
-                    startStopButtonId.innerText = (gPlaying)?LANG[gLang]["stop"]:"-";
-                    startStopButtonId.disabled = !gPlaying;
+                    startStopButtonId.innerText = (gPlayIntention)?LANG[gLang]["stop"]:"-";
+                    startStopButtonId.disabled = !gPlayIntention;
                 }
             } else {
                 startStopButtonId.innerText = LANG[gLang]["outRange"];
@@ -261,16 +275,12 @@ function getNextSeq () {
                 if ((gSeq != -1) && diffSeq(gSeq, seq) > gMaxSeqOops) {
                     console.log("Large difference between calculated and actual seq");
                     stopPlayer();
-                    startPlayer();
-                    updateDisplay();
                 }
                 gNextSeqQry = seq;                
             }
         },
         function () {
             stopPlayer();
-            startPlayer();
-            updateDisplay();
         }
     );
 }
@@ -444,8 +454,6 @@ function packetFail () {
     if (gPktFails++ > gMaxPktFails) {
         console.log("Too many consecutive bad packets");
         stopPlayer();
-        startPlayer();
-        updateDisplay();
     }
 }
 
@@ -710,27 +718,27 @@ function ontouchendChannel(channel) {
     }
 }
 
+function clickEnact() {
+    if (gPlayIntention) {
+        gPlayIntention = false;
+        stopPlayer();
+    } else {
+        gPlayIntention = true;
+        startPlayer();
+    }
+    updateDisplay();    
+}
+
 function startStopPlayerClick() {
     if (!mobileAndTabletcheck()) {
-        if (gPlaying) {
-            stopPlayer();
-        } else {
-            startPlayer();
-        }
-        updateDisplay();
+        clickEnact();
     }
 }
 
 function startStopPlayerTouchend() {
     if (mobileAndTabletcheck()) {
-        if (gPlaying) {
-            stopPlayer();
-        } else {
-            startPlayer();
-        }
-        updateDisplay();
+        clickEnact();
     }
-    
 }
 
 
@@ -738,11 +746,11 @@ function startStopPlayerTouchend() {
 function buttonStatus () {
     channel = parseInt(localStorage.channel);
     if ((gPlayError != gPrevPlayError) ||
-        (gPlaying != gPrevPlaying) ||
+        (gPlayIntention != gPrevPlayIntention) ||
         (channel != gPrevChannel)) {
         for (var i=0; i < gMaxChannels; i++) {
             var element = document.getElementById("channelButton" + i);
-            if ((i == channel) && gPlaying) {
+            if ((i == channel) && gPlayIntention) {
                 element.classList.add(gPlayError?"errorState":"playing");
                 element.classList.remove(!gPlayError?"errorState":"playing");
             } else {
@@ -752,12 +760,13 @@ function buttonStatus () {
         }
         gPrevChannel = channel;
         gPrevPlayError = gPlayError;
-        gPrevPlaying = gPlaying;
+        gPrevPlayIntention = gPlayIntention;
     }
 }
 //setInterval(buttonStatus, 500);
 
 function startPlayer() {
+    gEnacting = true;
     //Kill any existing players
     stopPlayer();
     console.log("Starting player");
@@ -797,10 +806,18 @@ function startPlayer2 () {
         console.log("Player time out after " + (gPlayTimeoutMs / (1000 * 60 * 60)) + " hours");
         stopPlayer();
         updateDisplay();
-    }, gPlayTimeoutMs);  
+    }, gPlayTimeoutMs);
+    gEnacting = false;
+}
+
+function fullStopPlayer () {
+    gPlayIntention = false;
+    stopPlayer();
 }
 
 function stopPlayer() {
+    gEnacting = true;
+    
     console.log("Stopping player");
     
     gPlaying = false;
@@ -834,6 +851,7 @@ function stopPlayer() {
     
     gPlayError = false;
     gAmrwbWorker.postMessage([null, null]);
+    gEnacting = false;
 }
 
 //Drop down menu related
