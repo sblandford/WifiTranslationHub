@@ -175,7 +175,7 @@ function watchDog () {
     if (!gWatchDogTmr) {
         gWatchDogTmr = setInterval(function () {
             if (!gWatchDogOK) {
-                fullStopPlayer();
+                StopPlayer();
                 updateDisplay();
             }
             gWatchDogOK = false;
@@ -804,7 +804,7 @@ function startPlayer2 () {
     //Stop player eventually to prevent forgotten app using too much data
     gPlayTimeout = setTimeout(function () {
         console.log("Player time out after " + (gPlayTimeoutMs / (1000 * 60 * 60)) + " hours");
-        stopPlayer();
+        fullStopPlayer();
         updateDisplay();
     }, gPlayTimeoutMs);
     gEnacting = false;
@@ -812,6 +812,10 @@ function startPlayer2 () {
 
 function fullStopPlayer () {
     gPlayIntention = false;
+    if (gPlayTimeout) {
+        clearInterval(gPlayTimeout);
+        gPlayTimeout = null;
+    }
     stopPlayer();
 }
 
@@ -824,10 +828,7 @@ function stopPlayer() {
     gNextSeqQry = -1;
     gPktTime = -1;    
     
-    if (gPlayTimeout) {
-        clearInterval(gPlayTimeout);
-        gPlayTimeout = null;
-    }    
+  
     if (gCtx) {
         gCtx.close();
         gCtx = null;
