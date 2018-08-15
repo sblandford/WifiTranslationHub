@@ -3,7 +3,6 @@ var gStatusUpdate = false;
 
 var gPacket;
 var gUpdateSeq = false;
-var seqTimer = false;
 var gCtx;
 
 //Packet capture
@@ -43,7 +42,7 @@ var gJsonpTimeout = 500;
 var gPrevChannel = 0;
 var gPlaying = false;
 var gSubsequentError = false;
-var gPrevPlaying = false;
+var gPrevPlayIntention = false;
 var gPlayError = false;
 var gPrevPlayError = false;
 var gLang = window.navigator.language.substring(0,2);
@@ -64,8 +63,12 @@ var gOnLan = false;
 var gStartAfterGeo = false;
 
 
+//State
 var gPlayTimeout;
 var gPlayTimeoutMs = 1000 * 60 * 60 * 2; // 2 hours
+var gPlayIntention = false;
+var gPlayerHope = false;
+var gEnacting = false;
 
 
 function mobileAndTabletcheck () {
@@ -145,27 +148,39 @@ function pollStatus () {
                 gStatusUpdate = true;
                 updateDisplay();
                 if (!checkStreamOK) {
-                    stopPlayer();
+                    fullStopPlayer();
                     updateDisplay();
                 }
             }
         }, null, null, "jpstat"
     );
+    //Get player into intended state
+    if (gPlayIntention && !gPlaying && !gEnacting) {
+        startPlayer();
+        updateDisplay();
+    }
+    if (!gPlayIntention && gPlaying && !gEnacting) {
+        stopPlayer();
+        updateDisplay();
+    }
 }
 
 function checkStreamOK () {
+    //Check channel is still valid and in range
     var channel = parseInt(localStorage.channel);
     return (gStatus.hasOwnProperty[channel] && gStatus[channel].hasOwnProperty['valid'] && gStatus[channel]['valid']);
 }
 
 function watchDog () {
-    gWatchDogTmr = setInterval(function () {
-        if (!gWatchDogOK) {
-            stopPlayer();
-            updateDisplay();
-        }
-        gWatchDogOK = false;
-    }, gWatchDogInterval);
+    if (!gWatchDogTmr) {
+        gWatchDogTmr = setInterval(function () {
+            if (!gWatchDogOK) {
+                StopPlayer();
+                updateDisplay();
+            }
+            gWatchDogOK = false;
+        }, gWatchDogInterval);
+    }
 }
 
 function updateDisplay() {
@@ -208,14 +223,14 @@ function updateDisplay() {
                     if (chNameId.classList.contains('chNameDead')) {
                         chNameId.classList.remove('chNameDead');
                     }
-                    startStopButtonId.innerText = LANG[gLang][(gPlaying)?"stop":"start"];
+                    startStopButtonId.innerText = LANG[gLang][(gPlayIntention)?"stop":"start"];
                     startStopButtonId.disabled = false;
                 } else {
                     if (!chNameId.classList.contains('chNameDead')) {
                         chNameId.classList.add('chNameDead');
                     }
-                    startStopButtonId.innerText = (gPlaying)?LANG[gLang]["stop"]:"-";
-                    startStopButtonId.disabled = !gPlaying;
+                    startStopButtonId.innerText = (gPlayIntention)?LANG[gLang]["stop"]:"-";
+                    startStopButtonId.disabled = !gPlayIntention;
                 }
             } else {
                 startStopButtonId.innerText = LANG[gLang]["outRange"];
@@ -257,17 +272,15 @@ function getNextSeq () {
                     testPacket (seq);
                 }
                 //Panic if wildly wrong
-                if ((gSeq != -1) && diffSeq(gNextSeqQry, seq) > gMaxSeqOops) {
+                if ((gSeq != -1) && diffSeq(gSeq, seq) > gMaxSeqOops) {
                     console.log("Large difference between calculated and actual seq");
                     stopPlayer();
-                    updateDisplay();
                 }
                 gNextSeqQry = seq;                
             }
         },
         function () {
             stopPlayer();
-            updateDisplay();
         }
     );
 }
@@ -301,19 +314,23 @@ function fillBuffer(seq) {
     gNextSeqQry = -1;
     //Re-check seq number with server every minute
     //Also refreshes UUID timeout for stats
-    gSeqUpdateLoop = setInterval(function() {
-        getNextSeq ();
-    }, gSeqUpdateTime);
+    if (!gSeqUpdateLoop) {
+        gSeqUpdateLoop = setInterval(function() {
+            getNextSeq ();
+        }, gSeqUpdateTime);
+    }
     //Just keep loading packets like crazy
-    gBufferLoop = setInterval(function() {
-        gSeq = (gSeq + 1) & 0xFFFF;
-        //If we have new sync for server use that
-        if (gNextSeqQry > 0) {
-            gSeq = gNextSeqQry;
-            gNextSeqQry = -1;
-        }
-        fetchNewPacket(gSeq);
-    }, gPktTime);
+    if (!gBufferLoop) {
+        gBufferLoop = setInterval(function() {
+            gSeq = (gSeq + 1) & 0xFFFF;
+            //If we have new sync for server use that
+            if (gNextSeqQry > 0) {
+                gSeq = gNextSeqQry;
+                gNextSeqQry = -1;
+            }
+            fetchNewPacket(gSeq);
+        }, gPktTime);
+    }
 }
 
 //Returns true if sequence number a > b, or a >= b
@@ -352,83 +369,79 @@ function playBuffer(seq) {
     var reSync = false;
     console.log("Playing behind by " + packetLag + " packets");
     seq = (seq - packetLag) & 0xFFFF;
-    gDecodeLoop = setInterval(function() {
-        var seqPrev = seq;
-        var seqPrevOk = ((gPkts.hasOwnProperty(seqPrev) && gPkts[seqPrev]) != false);
-        
-        seq = (seq + 1) & 0xFFFF;
-        
-        //This should happen but reset if it does
-        /*if (cmpSeq(seq, gSeq, true)) {
-            console.log("Resetting wayward audio seq from " + seq + " to " + (gSeq - packetLag));
-             seq = (gSeq - packetLag) & 0xFFFF;
-        }*/
-        //Pull back if polling too soon
-        /*if (cmpSeq(seq, gSeqArrived)) {
-            console.log("Audio polling queue to soon shifting seq from " + seq + " to " + (gSeqArrived - packetLag) & 0xFFFF);
-            seq = (gSeqArrived - packetLag) & 0xFFFF;
-        }*/
-        var seqOK = ((gPkts.hasOwnProperty(seq) && gPkts[seq]) != false);
-        var seqNext = (seq + 2) & 0xFFFF;
-        var seqNextOk = ((gPkts.hasOwnProperty(seqNext) && gPkts[seqNext]) != false);
-        var seqFuture = (seq + 3) & 0xFFFF;
-        var seqFutureOk = ((gPkts.hasOwnProperty(seqFuture) && gPkts[seqFuture]) != false);
-        
-        if (!seqNextOk) {
-            nextFail = true;
-        }
-        if (!seqFutureOk) {
-            futureFail = true;
-        }
-
-        console.log ((seqPrevOk | 0) + " " + (seqOK | 0) + " " + (seqNextOk| 0) + " " + (seqFutureOk| 0) + ", Seq : " + seq + ", Available : " + gSeqArrived );
-        if (seqOK) {
-            playRtpPacket(gPkts[seq], reSync);
-            //Clear reSync flag
-            reSync = false;
-            //Delete last packet
-            if (gPkts.hasOwnProperty(seqPrev)) {
-                delete gPkts[seqPrev];
-            }
-        } else {
-            currentFail = true;
-            if (seqPrevOk) {
-                //This isn't delete but will be picked up
-                //by lifetime expire
-                pokePktTimeCode(gPkts[seqPrev], (seqPrev - seq));
-                console.log("Filling in for missing packet : " + seq + " with " + seqPrev);
-                playRtpPacket(gPkts[seqPrev]);
-            }
-        }
-        //Evaluate stats
-        if (statCounter++ > gSeqStatCount) {
-            statCounter = 0;
+    if (!gDecodeLoop) {
+        gDecodeLoop = setInterval(function() {
+            var seqPrev = seq;
+            var seqPrevOk = ((gPkts.hasOwnProperty(seqPrev) && gPkts[seqPrev]) != false);
             
-            //Increase lag if problems or potential problems occured
-            if (currentFail || nextFail) {
-                console.log("Increasing buffer length by 1");
-                seq = (seq - 1) & 0xFFFF;
-                reSync = true;
-            } else {           
-                //Decrease lag if safe to do so
-                if (!futureFail && ((gSeq - seq) > 1)) {
-                    console.log("Decreasing buffer length by 1");
-                    if (seqOK) {
-                        console.log("Filling in for missing packet : " + (seq + 1) + " with " + seq);
-                        pokePktTimeCode(gPkts[seq], 1);
-                        playRtpPacket(gPkts[seq]);
-                    }
-                    seq = (seq + 1) & 0xFFFF;
-                    reSync = true;
+            seq = (seq + 1) & 0xFFFF;
+            
+            var seqOK = ((gPkts.hasOwnProperty(seq) && gPkts[seq]) != false);
+            var seqNext = (seq + 2) & 0xFFFF;
+            var seqNextOk = ((gPkts.hasOwnProperty(seqNext) && gPkts[seqNext]) != false);
+            var seqFuture = (seq + 3) & 0xFFFF;
+            var seqFutureOk = ((gPkts.hasOwnProperty(seqFuture) && gPkts[seqFuture]) != false);
+            
+            if (!seqNextOk) {
+                nextFail = true;
+            }
+            if (!seqFutureOk) {
+                futureFail = true;
+            }
+
+            //Verbose
+            //console.log ((seqPrevOk | 0) + " " + (seqOK | 0) + " " + (seqNextOk| 0) + " " + (seqFutureOk| 0) + ", Seq : " + seq + ", Available : " + gSeqArrived );
+            if (seqOK) {
+                playRtpPacket(gPkts[seq], reSync);
+                //Clear reSync flag
+                reSync = false;
+                //Delete last packet
+                if (gPkts.hasOwnProperty(seqPrev)) {
+                    delete gPkts[seqPrev];
+                }
+            } else {
+                currentFail = true;
+                if (seqPrevOk) {
+                    //This isn't delete but will be picked up
+                    //by lifetime expire
+                    pokePktTimeCode(gPkts[seqPrev], (seqPrev - seq));
+                    console.log("Filling in for missing packet : " + seq + " with " + seqPrev);
+                    playRtpPacket(gPkts[seqPrev]);
                 }
             }
-            currentFail = false;
-            nextFail = false;
-            futureFail = false;
-        }
-        
-        
-    }, gPktTime);           
+            //Evaluate stats
+            if (statCounter++ > gSeqStatCount) {
+                statCounter = 0;
+
+                console.log ((seqPrevOk | 0) + " " + (seqOK | 0) + " " + (seqNextOk| 0) + " " + (seqFutureOk| 0) + ", Seq : " + seq + ", Available : " + gSeqArrived );
+
+                
+                //Increase lag if problems or potential problems occured
+                if (currentFail || nextFail) {
+                    seq = (seq - 1) & 0xFFFF;
+                    reSync = true;
+                    console.log("Increasing buffer length by 1 : " + (gSeqArrived - seq));
+            } else {           
+                    //Decrease lag if safe to do so
+                    if (!futureFail && ((gSeq - seq) > 1)) {
+                        console.log("Decreasing buffer length by 1");
+                        if (seqOK) {
+                            console.log("Filling in for missing packet : " + (seq + 1) + " with " + seq);
+                            pokePktTimeCode(gPkts[seq], 1);
+                            playRtpPacket(gPkts[seq]);
+                        }
+                        seq = (seq + 1) & 0xFFFF;
+                        reSync = true;
+                    }
+                }
+                currentFail = false;
+                nextFail = false;
+                futureFail = false;
+            }
+            
+            
+        }, gPktTime);
+    }
 }
 
 function fetchNewPacket (seq, handler) {
@@ -441,7 +454,6 @@ function packetFail () {
     if (gPktFails++ > gMaxPktFails) {
         console.log("Too many consecutive bad packets");
         stopPlayer();
-        updateDisplay();
     }
 }
 
@@ -459,7 +471,8 @@ function fetchPacket (seq, handler) {
     channelText = channelText.substr(channelText.length - 2);
     var url = "/rtp/" + channelText + "/" + seq;
 
-    console.log("Request seq : " + seq);
+    //Verbose
+    //console.log("Request seq : " + seq);
     req.onload = function () {
         if (req.status == 200) {
             //Abort if packet placeholder has expired
@@ -638,7 +651,7 @@ gAmrwbWorker.onmessage = function (e) {
         gDecodeTime = ((new Date).getTime() - gstartDecodeTimeStamp) / 1000.0;
         
         if (gDecodeTime > (gFutureTime / 2)) {
-            console.log("Increasing audio DSP time allocation from " + gFutureTime + " by " + gFutureIncrement);
+            console.log("Increasing audio DSP time allocation from " + gFutureTime + " to " + (gFutureTime + gFutureIncrement));
             gFutureTime += gFutureIncrement;
         }
     }
@@ -705,27 +718,27 @@ function ontouchendChannel(channel) {
     }
 }
 
+function clickEnact() {
+    if (gPlayIntention) {
+        gPlayIntention = false;
+        stopPlayer();
+    } else {
+        gPlayIntention = true;
+        startPlayer();
+    }
+    updateDisplay();    
+}
+
 function startStopPlayerClick() {
     if (!mobileAndTabletcheck()) {
-        if (gPlaying) {
-            stopPlayer();
-        } else {
-            startPlayer();
-        }
-        updateDisplay();
+        clickEnact();
     }
 }
 
 function startStopPlayerTouchend() {
     if (mobileAndTabletcheck()) {
-        if (gPlaying) {
-            stopPlayer();
-        } else {
-            startPlayer();
-        }
-        updateDisplay();
+        clickEnact();
     }
-    
 }
 
 
@@ -733,11 +746,11 @@ function startStopPlayerTouchend() {
 function buttonStatus () {
     channel = parseInt(localStorage.channel);
     if ((gPlayError != gPrevPlayError) ||
-        (gPlaying != gPrevPlaying) ||
+        (gPlayIntention != gPrevPlayIntention) ||
         (channel != gPrevChannel)) {
         for (var i=0; i < gMaxChannels; i++) {
             var element = document.getElementById("channelButton" + i);
-            if ((i == channel) && gPlaying) {
+            if ((i == channel) && gPlayIntention) {
                 element.classList.add(gPlayError?"errorState":"playing");
                 element.classList.remove(!gPlayError?"errorState":"playing");
             } else {
@@ -747,14 +760,16 @@ function buttonStatus () {
         }
         gPrevChannel = channel;
         gPrevPlayError = gPlayError;
-        gPrevPlaying = gPlaying;
+        gPrevPlayIntention = gPlayIntention;
     }
 }
 //setInterval(buttonStatus, 500);
 
 function startPlayer() {
+    gEnacting = true;
     //Kill any existing players
     stopPlayer();
+    console.log("Starting player");
     //Do we need to get position
     if (!gOnLan && !gGeoLat) {
         var geoDiv = document.getElementById("geoBox");
@@ -789,24 +804,31 @@ function startPlayer2 () {
     //Stop player eventually to prevent forgotten app using too much data
     gPlayTimeout = setTimeout(function () {
         console.log("Player time out after " + (gPlayTimeoutMs / (1000 * 60 * 60)) + " hours");
-        stopPlayer();
+        fullStopPlayer();
         updateDisplay();
-    }, gPlayTimeoutMs);  
+    }, gPlayTimeoutMs);
+    gEnacting = false;
+}
+
+function fullStopPlayer () {
+    gPlayIntention = false;
+    if (gPlayTimeout) {
+        clearInterval(gPlayTimeout);
+        gPlayTimeout = null;
+    }
+    stopPlayer();
 }
 
 function stopPlayer() {
+    gEnacting = true;
+    
+    console.log("Stopping player");
+    
     gPlaying = false;
     gNextSeqQry = -1;
     gPktTime = -1;    
     
-    if (seqTimer) {
-        clearInterval(seqTimer);
-        seqTimer = false;
-    }
-    if (gPlayTimeout) {
-        clearInterval(gPlayTimeout);
-        gPlayTimeout = null;
-    }    
+  
     if (gCtx) {
         gCtx.close();
         gCtx = null;
@@ -830,6 +852,7 @@ function stopPlayer() {
     
     gPlayError = false;
     gAmrwbWorker.postMessage([null, null]);
+    gEnacting = false;
 }
 
 //Drop down menu related
