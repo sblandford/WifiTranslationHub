@@ -89,7 +89,7 @@ def listenUuid(channel):
     ip_address = ipaddress.ip_address(config.MULTICAST_BASE_ADDR) + channel + config.MUTLICAST_MANAGEMENT_OFFSET + config.MUTLICAST_UUID_OFFSET
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    sock.bind((str(ip_address), config.MULTICAST_PORT))
+    sock.bind(("", config.MULTICAST_PORT))
     group = socket.inet_aton(str(ip_address))
     mreq = struct.pack("4sL", group, socket.INADDR_ANY)
     reported = False
