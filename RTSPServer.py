@@ -2,6 +2,8 @@
 
 __author__ = 'Simon Blandford'
 
+import time
+
 # Based on https://github.com/TibbersDriveMustang/Video-Streaming-Server-and-Client
 
 try:
@@ -50,14 +52,19 @@ def server():
     hubTcpSocket.settimeout(config.SOCKET_TIMEOUT)
     # Receive client info (address,port) through RTSP/HTTP/TCP session
     while not ended:
-        clientInfo = {}
         try:
-            clientInfo['connection'], (clientInfo['IP'], clientInfo['port']) = hubTcpSocket.accept()
-        except socket.timeout:
-            continue
+            clientInfo = {}
+            try:
+                clientInfo['connection'], (clientInfo['IP'], clientInfo['port']) = hubTcpSocket.accept()
+            except socket.timeout:
+                continue
 
-        logging.debug('Received from %s on port %s', clientInfo['IP'], clientInfo['port'])
-        RTSPServerSession.HubServerSession(clientInfo).runThread()
+            logging.debug('Received from %s on port %s', clientInfo['IP'], clientInfo['port'])
+            RTSPServerSession.HubServerSession(clientInfo).runThread()
+        except Exception as e:
+            logging.error(e.__doc__)
+            logging.error(e.message)
+            time.sleep(1)
     hubTcpSocket.close()
 
 

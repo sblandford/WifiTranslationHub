@@ -108,52 +108,61 @@ def listenUuid(channel):
     logging.debug("Waiting for UUID multicast packets on channel %d, address %s", channel, str(ip_address))
     while not ended[channel]:
         try:
-            data, address = sock.recvfrom(config.MULTICAST_PACKET_BUFFER_SIZE)
-        except socket.timeout:
-            continue
-        except:
-            logging.error("ClientUuidRx : %s", sys.exc_info()[0])
-            time.sleep(config.SOCKET_RETRY_SECONDS)
-            continue
+            try:
+                data, address = sock.recvfrom(config.MULTICAST_PACKET_BUFFER_SIZE)
+            except socket.timeout:
+                continue
+            except:
+                logging.error("ClientUuidRx : %s", sys.exc_info()[0])
+                time.sleep(config.SOCKET_RETRY_SECONDS)
+                continue
 
-        length = len(data)
-        if length != (config.UUID_LENGTH + 2):
-            continue
-        uuid = data[2:].decode('utf-8')
-        if data[1] != ord('X'):
-            continue
-        if data[0] == ord('T'):
-            if not uuid in channelDict['channels'][channel]['tx']:
-                logging.debug("Adding client TX UUID : %s", uuid)
-            with lock[channel]:
-                channelDict['channels'][channel]['tx'][uuid] = time.time()
-        elif data[0] == ord('R'):
-            if not uuid in channelDict['channels'][channel]['rx']:
-                logging.debug("Adding client RX UUID : %s", uuid)
-            with lock[channel]:
-                channelDict['channels'][channel]['rx'][uuid] = time.time()
+            length = len(data)
+            if length != (config.UUID_LENGTH + 2):
+                continue
+            uuid = data[2:].decode('utf-8')
+            if data[1] != ord('X'):
+                continue
+            if data[0] == ord('T'):
+                if not uuid in channelDict['channels'][channel]['tx']:
+                    logging.debug("Adding client TX UUID : %s", uuid)
+                with lock[channel]:
+                    channelDict['channels'][channel]['tx'][uuid] = time.time()
+            elif data[0] == ord('R'):
+                if not uuid in channelDict['channels'][channel]['rx']:
+                    logging.debug("Adding client RX UUID : %s", uuid)
+                with lock[channel]:
+                    channelDict['channels'][channel]['rx'][uuid] = time.time()
+        except Exception as e:
+            logging.error(e.__doc__)
+            logging.error(e.message)
+            time.sleep(1)
     sock.close()
 
 def timeoutUuids():
     global channelDict
     while not timeoutEnded:
-        for channel in range(0, config.MAX_CHANNELS):
-            txDeletes = []
-            rxDeletes = []
-            for uuid in channelDict['channels'][channel]['tx']:
-                if (time.time() - channelDict['channels'][channel]['tx'][uuid]) > config.UUID_TIMEOUT_SECONDS:
-                    txDeletes.append(uuid)
-            for uuid in channelDict['channels'][channel]['rx']:
-                if (time.time() - channelDict['channels'][channel]['rx'][uuid]) > config.UUID_TIMEOUT_SECONDS:
-                    rxDeletes.append(uuid)
-            with lock[channel]:
-                for uuid in txDeletes:
-                    if uuid in channelDict['channels'][channel]['tx']:
-                        logging.debug("Timeout of client TX UUID : %s", uuid)
-                        del channelDict['channels'][channel]['tx'][uuid]
-                for uuid in rxDeletes:
-                    if uuid in channelDict['channels'][channel]['rx']:
-                        logging.debug("Timeout of client RX UUID : %s", uuid)
-                        del channelDict['channels'][channel]['rx'][uuid]
+        try:
+            for channel in range(0, config.MAX_CHANNELS):
+                txDeletes = []
+                rxDeletes = []
+                for uuid in channelDict['channels'][channel]['tx']:
+                    if (time.time() - channelDict['channels'][channel]['tx'][uuid]) > config.UUID_TIMEOUT_SECONDS:
+                        txDeletes.append(uuid)
+                for uuid in channelDict['channels'][channel]['rx']:
+                    if (time.time() - channelDict['channels'][channel]['rx'][uuid]) > config.UUID_TIMEOUT_SECONDS:
+                        rxDeletes.append(uuid)
+                with lock[channel]:
+                    for uuid in txDeletes:
+                        if uuid in channelDict['channels'][channel]['tx']:
+                            logging.debug("Timeout of client TX UUID : %s", uuid)
+                            del channelDict['channels'][channel]['tx'][uuid]
+                    for uuid in rxDeletes:
+                        if uuid in channelDict['channels'][channel]['rx']:
+                            logging.debug("Timeout of client RX UUID : %s", uuid)
+                            del channelDict['channels'][channel]['rx'][uuid]
+        except Exception as e:
+            logging.error(e.__doc__)
+            logging.error(e.message)
         time.sleep(1)
 

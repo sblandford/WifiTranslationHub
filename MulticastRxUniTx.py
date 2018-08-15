@@ -364,75 +364,80 @@ def reflectRTP(channel):
     sock.settimeout(config.SOCKET_TIMEOUT)
     logging.debug("Waiting for multicast packets on channel %d, address %s", channel, str(ip_address))
     while not privChannelDict['channels'][channel]['ended']:
-        timeout = False
         try:
-            data, address = sock.recvfrom(config.MULTICAST_PACKET_BUFFER_SIZE)
-        except socket.timeout:
-            timeout = True
-        if timeout:
-            logging.debug("Timeout on channel %s", channel)
-            with privChannelDict['channels'][channel]['lock']:
-                channelDict['channels'][channel]['valid'] = False
-                channelDict['channels'][channel]['busy'] = False
+            timeout = False
+            try:
+                data, address = sock.recvfrom(config.MULTICAST_PACKET_BUFFER_SIZE)
+            except socket.timeout:
+                timeout = True
+            if timeout:
+                logging.debug("Timeout on channel %s", channel)
+                with privChannelDict['channels'][channel]['lock']:
+                    channelDict['channels'][channel]['valid'] = False
+                    channelDict['channels'][channel]['busy'] = False
+                with privChannelDict['channels'][channel]['newPacketLock']:
+                    privChannelDict['channels'][channel]['newPacketLock'].notify_all()
+                continue
+            else:
+                with privChannelDict['channels'][channel]['rtpLock']:
+                    channelDict['channels'][channel]['busy'] = True
+                    privChannelDict['channels'][channel]['rtpPacket'] = data
+            if not amrPacket(data):
+                logging.debug("received %d bytes of invalid data on channel %d from %s", len(data), channel, address)
+                with privChannelDict['channels'][channel]['lock']:
+                    channelDict['channels'][channel]['valid'] = False
+                continue
+            seq = (data[2] << 8) + data[3]
+            timeStamp = (data[4] << 24) + (data[5] << 16) + (data[6] << 8) + data[7]
+
+            if seq != (seqPrev + 1) and seq != 0 and seqPrev != 0xFFFF:
+                logging.info("Missed packet from seq %d to %d on channel %s", seqPrev, seq, channel)
+
+            if seq > seqPrev:
+                with privChannelDict['channels'][channel]['lock']:
+                    privChannelDict['channels'][channel]['seq'] = seq
+                    privChannelDict['channels'][channel]['timeStamp'] = timeStamp
+                    privChannelDict['channels'][channel]['rtpPacket'] = data
+                    if not seq in packetCache:
+                        packetCache[seq] = data
+                        for cacheSeq in list(packetCache.keys()):
+                            if cacheSeq < (seq - config.CACHE_NUMBER_OF_PACKETS):
+                                del packetCache[cacheSeq]
+                    channelDict['channels'][channel]['kbps'] = amrKbps(data)
+                    channelDict['channels'][channel]['valid'] = True
+            logging.debug("received %d bytes on channel %d from %s with seq %d and timestamp %d", len(data), channel,
+                          address, seq, timeStamp)
             with privChannelDict['channels'][channel]['newPacketLock']:
                 privChannelDict['channels'][channel]['newPacketLock'].notify_all()
-            continue
-        else:
-            with privChannelDict['channels'][channel]['rtpLock']:
-                channelDict['channels'][channel]['busy'] = True
-                privChannelDict['channels'][channel]['rtpPacket'] = data
-        if not amrPacket(data):
-            logging.debug("received %d bytes of invalid data on channel %d from %s", len(data), channel, address)
+
+            #Process RTP client
             with privChannelDict['channels'][channel]['lock']:
-                channelDict['channels'][channel]['valid'] = False
-            continue
-        seq = (data[2] << 8) + data[3]
-        timeStamp = (data[4] << 24) + (data[5] << 16) + (data[6] << 8) + data[7]
-
-        if seq != (seqPrev + 1) and seq != 0 and seqPrev != 0xFFFF:
-            logging.info("Missed packet from seq %d to %d on channel %s", seqPrev, seq, channel)
-
-        if seq > seqPrev:
-            with privChannelDict['channels'][channel]['lock']:
-                privChannelDict['channels'][channel]['seq'] = seq
-                privChannelDict['channels'][channel]['timeStamp'] = timeStamp
-                privChannelDict['channels'][channel]['rtpPacket'] = data
-                if not seq in packetCache:
-                    packetCache[seq] = data
-                    for cacheSeq in list(packetCache.keys()):
-                        if cacheSeq < (seq - config.CACHE_NUMBER_OF_PACKETS):
-                            del packetCache[cacheSeq]
-                channelDict['channels'][channel]['kbps'] = amrKbps(data)
-                channelDict['channels'][channel]['valid'] = True
-        logging.debug("received %d bytes on channel %d from %s with seq %d and timestamp %d", len(data), channel,
-                      address, seq, timeStamp)
-        with privChannelDict['channels'][channel]['newPacketLock']:
-            privChannelDict['channels'][channel]['newPacketLock'].notify_all()
-
-        #Process RTP client
-        with privChannelDict['channels'][channel]['lock']:
-            rtspSessions = list(channelDict['channels'][channel]['rtspSessions'])
-        for sessionId in rtspSessions:
-            with lock:
-                clientInfo = clientDictionary[sessionId]
-            if clientInfo:
-                if not clientInfo['packetRedundancy'] and seq <= seqPrev:
-                    continue
-                if not 'rtpOutSocket' in clientInfo or not 'rtcpInSocket' in clientInfo:
-                    logging.error("Sockets not set up for client (removing) : %s", clientInfo['sessionId'])
-                    removeRtspClient(clientInfo['sessionId'])
-                    continue
-                clientInfo['rtpOutSocket'].sendto(data, (clientInfo['IP'], clientInfo['clientport']))
-                logging.debug('Send %d bytes to %s on IP %s port %d', len(data), clientInfo['sessionId'],
-                              clientInfo['IP'], clientInfo['clientport'])
-                rtcpReady = select.select([clientInfo['rtcpInSocket']], [], [], 0)
-                if rtcpReady[0]:
-                    logging.debug("Reading RTCP packet on port : %d", clientInfo['rtcpInPort'])
-                    rtcpData = clientInfo['rtcpInSocket'].recv(config.HUB_PACKET_BUFFER_SIZE)
-                    if len(rtcpData):
-                        clientInfo['rtcpRxEvent'] = True
-                        logging.info("RTCP received message : %s", str(rtcpData))
-        seqPrev = seq
+                rtspSessions = list(channelDict['channels'][channel]['rtspSessions'])
+            for sessionId in rtspSessions:
+                with lock:
+                    clientInfo = clientDictionary[sessionId]
+                if clientInfo:
+                    if not clientInfo['packetRedundancy'] and seq <= seqPrev:
+                        continue
+                    if not 'rtpOutSocket' in clientInfo or not 'rtcpInSocket' in clientInfo:
+                        logging.error("Sockets not set up for client (removing) : %s", clientInfo['sessionId'])
+                        removeRtspClient(clientInfo['sessionId'])
+                        continue
+                    clientInfo['rtpOutSocket'].sendto(data, (clientInfo['IP'], clientInfo['clientport']))
+                    logging.debug('Send %d bytes to %s on IP %s port %d', len(data), clientInfo['sessionId'],
+                                  clientInfo['IP'], clientInfo['clientport'])
+                    rtcpReady = select.select([clientInfo['rtcpInSocket']], [], [], 0)
+                    if rtcpReady[0]:
+                        logging.debug("Reading RTCP packet on port : %d", clientInfo['rtcpInPort'])
+                        rtcpData = clientInfo['rtcpInSocket'].recv(config.HUB_PACKET_BUFFER_SIZE)
+                        if len(rtcpData):
+                            clientInfo['rtcpRxEvent'] = True
+                            logging.info("RTCP received message : %s", str(rtcpData))
+            seqPrev = seq
+        except Exception as e:
+            logging.error(e.__doc__)
+            logging.error(e.message)
+            time.sleep(1)
     sock.close()
 
 def shortStatWorker():
@@ -443,19 +448,23 @@ def shortStatWorker():
     if not 'channelStatLock' in channelStatDict:
         channelStatDict['channelStatLock'] = threading.Lock()
     while not ended:
-        with channelStatDict['channelStatLock']:
-            for i in range(0, config.MAX_CHANNELS):
-                if not i in channelStatDict:
-                    channelStatDict[i] = {}
-                with privChannelDict['channels'][i]['lock']:
+        try:
+            with channelStatDict['channelStatLock']:
+                for i in range(0, config.MAX_CHANNELS):
                     if not i in channelStatDict:
                         channelStatDict[i] = {}
-                    if 'allowedIds' in channelDict['channels'][i]:
-                        channelStatDict[i]['allowedIds'] = channelDict['channels'][i]['allowedIds']
-                    if 'busy' in channelDict['channels'][i]:
-                        channelStatDict[i]['busy'] = channelDict['channels'][i]['busy']
-                    if 'valid' in channelDict['channels'][i]:
-                        channelStatDict[i]['valid'] = channelDict['channels'][i]['valid']
-                    if 'name' in channelDict['channels'][i]:
-                        channelStatDict[i]['name'] = channelDict['channels'][i]['name']
+                    with privChannelDict['channels'][i]['lock']:
+                        if not i in channelStatDict:
+                            channelStatDict[i] = {}
+                        if 'allowedIds' in channelDict['channels'][i]:
+                            channelStatDict[i]['allowedIds'] = channelDict['channels'][i]['allowedIds']
+                        if 'busy' in channelDict['channels'][i]:
+                            channelStatDict[i]['busy'] = channelDict['channels'][i]['busy']
+                        if 'valid' in channelDict['channels'][i]:
+                            channelStatDict[i]['valid'] = channelDict['channels'][i]['valid']
+                        if 'name' in channelDict['channels'][i]:
+                            channelStatDict[i]['name'] = channelDict['channels'][i]['name']
+        except Exception as e:
+            logging.error(e.__doc__)
+            logging.error(e.message)
         time.sleep(1)
