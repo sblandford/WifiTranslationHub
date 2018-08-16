@@ -2,9 +2,8 @@
 
 __author__ = "Simon Blandford"
 
+from Log import log
 import http.server
-import logging
-
 try:
     import config
 except ImportError:
@@ -39,7 +38,7 @@ def start():
             httpd = ServerClass(('', config.WEB_SERVER_PORT), HandlerClass)
         except:
             if not reported:
-                logging.error("IpBroadcast : %s", sys.exc_info()[0])
+                log().error("IpBroadcast : %s", sys.exc_info()[0])
             reported = True
             time.sleep(config.SOCKET_RETRY_SECONDS)
             pass
@@ -47,7 +46,7 @@ def start():
             break
     httpd.timeout = config.SOCKET_TIMEOUT
 
-    logging.info ("Starting web server on port : %d", config.WEB_SERVER_PORT)
+    log().info ("Starting web server on port : %d", config.WEB_SERVER_PORT)
     ended = False
     while not ended:
         try:
@@ -59,7 +58,7 @@ def start():
 def stop():
     global ended
 
-    logging.info("Stopping web server")
+    log().info("Stopping web server")
     ended = True
 
 class ThreadingSimpleServer (socketserver.ThreadingMixIn, http.server.HTTPServer):
@@ -77,7 +76,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         for arg in args:
             if str(arg) == "timed out" or str(arg) == "200":
                 return
-        logging.debug(format%args)
+        log().debug(format%args)
 
     def _respond(self, contentType, binContent, cacheSeconds=-1):
         self.send_response(200)
@@ -141,7 +140,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     self._respond(contentType, bytearray(content, "utf8"))
                     return
                 elif seq >= 0:
-                    logging.debug("RTP packet over HTTP requested by on channel: %d, seq: %d", channel, seq)
+                    log().debug("RTP packet over HTTP requested by on channel: %d, seq: %d", channel, seq)
                     contentType = "application/octet-stream"
                     binContent = MulticastRxUniTx.getHttpRtpPacketSeq(channel, seq)
                     if binContent:
@@ -205,11 +204,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         contentType, encoding = mimetypes.guess_type(path)
         filePath = os.getcwd() + '/web/' + path
-        logging.debug("Opening file : %s, type %s", filePath, contentType)
+        log().debug("Opening file : %s, type %s", filePath, contentType)
         try:
             fsock = open(filePath, "rb")
         except IOError:
-            logging.warning("Unable to open file : %s", filePath)
+            log().warning("Unable to open file : %s", filePath)
             self._error(404, "File not found : " + path)
         else:
             binContent = bytearray(fsock.read())
@@ -223,7 +222,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         content_length = int(self.headers['Content-Length']) # <--- Gets the size of data
         post_data = self.rfile.read(content_length) # <--- Gets the data itself
-        logging.info("\nPOST request,\nPath: %s\nHeaders:\n%s\n\nBody:\n%s\n",
+        log().info("\nPOST request,\nPath: %s\nHeaders:\n%s\n\nBody:\n%s\n",
                 str(self.path), str(self.headers), post_data.decode("utf-8"))
 
         self._set_response()

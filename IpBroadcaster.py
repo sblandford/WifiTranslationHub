@@ -2,11 +2,11 @@
 
 __author__ = 'Simon Blandford'
 
+from Log import log
 try:
     import config
 except ImportError:
     import config_dist as config
-import logging
 import random
 import re
 import socket
@@ -22,18 +22,18 @@ hubAddress = ip
 def runThread():
     global thread
     if not thread:
-        logging.info('Starting IP Broadcast thread')
+        log().info('Starting IP Broadcast thread')
         thread = threading.Thread(target=broadcastIp)
         thread.start()
     else:
-        logging.warning('IP Broadcast thread already started')
+        log().warning('IP Broadcast thread already started')
 
 def sigStopThread():
     global ended
     if thread:
-        logging.info('Ending IP Broadcast thread')
+        log().info('Ending IP Broadcast thread')
     else:
-        logging.warning('IP Broadcast thread already signaled to stop')
+        log().warning('IP Broadcast thread already signaled to stop')
     ended = True
 
 def waitStopThread():
@@ -54,13 +54,13 @@ def broadcastIp():
     reported = False
     while not ended:
         try:
-            logging.debug(message)
+            log().debug(message)
             sock.sendto(message.encode(), ('255.255.255.255', config.IP_BROADCAST_PORT))
         except KeyboardInterrupt:
-            logging.info('IP Broadcast Thread finished')
+            log().info('IP Broadcast Thread finished')
         except:
             if not reported:
-                logging.error("IpBroadcast : %s", sys.exc_info()[0])
+                log().error("IpBroadcast : %s", sys.exc_info()[0])
             reported = True
             pass
         else:
@@ -74,7 +74,7 @@ def getIp():
         ip = config.HUB_ACCESS_IP_ADDRESS
         if config.HUB_TAKE_ACCESS_IP_ADDRESS_AS_GOSPEL:
             hubAddress = config.REQUIRED_HOSTNAME
-            logging.info('Our local IP address defined as %s and hostname defined as %s', ip, hubAddress);
+            log().info('Our local IP address defined as %s and hostname defined as %s', ip, hubAddress);
             return True, ip
     else:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -83,36 +83,36 @@ def getIp():
             s.connect(('10.255.255.255', 1))
             ip = s.getsockname()[0]
         except:
-            logging.warning("Unable to determine local IP address, using 127.0.0.1")
+            log().warning("Unable to determine local IP address, using 127.0.0.1")
             return False, "127.0.0.1"
         finally:
             s.close()
 
-    logging.info('Our local IP address is ' + str(ip));
+    log().info('Our local IP address is ' + str(ip));
     hubAddress = str(ip)
 
     #Try real DNS server query
     dnsResponse = dnsQuery(ip)
     #Otherwise try just getting hostname
     if dnsResponse == "T":
-        logging.warning("Unable to find DNS server by guessing. Attempting to determine hostname == IP locally")
+        log().warning("Unable to find DNS server by guessing. Attempting to determine hostname == IP locally")
         try:
             dnsResponse = str(socket.gethostbyname(config.REQUIRED_HOSTNAME))
         except socket.gaierror:
-            logging.warning(
+            log().warning(
                 config.REQUIRED_HOSTNAME + ' must resolve to ' + ip + '. This can either by done by setting the hostname of this server or setting up a DNS record on your local DNS server')
             return False, ip
 
     if len(dnsResponse) < 5:
-        logging.warning(
+        log().warning(
             config.REQUIRED_HOSTNAME + " must resolve to " + ip + ". This can either by done by setting the hostname of this server or setting up a DNS record on your local DNS server")
         return False, ip
 
     if dnsResponse == ip:
-        logging.info(config.REQUIRED_HOSTNAME + ' resolves to ' + ip + ' successfully')
+        log().info(config.REQUIRED_HOSTNAME + ' resolves to ' + ip + ' successfully')
         hubAddress = config.REQUIRED_HOSTNAME
     else:
-        logging.warning(config.REQUIRED_HOSTNAME + ' resolves to ' +
+        log().warning(config.REQUIRED_HOSTNAME + ' resolves to ' +
                         dnsResponse + ' but it should resolve to ' + ip)
         return False, ip
     return True, ip

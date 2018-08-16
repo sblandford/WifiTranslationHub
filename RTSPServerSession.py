@@ -1,5 +1,6 @@
 __author__ = "Simon Blandford"
 
+from Log import log
 import calendar
 try:
     import config
@@ -7,7 +8,6 @@ except ImportError:
     import config_dist as config
 import datetime
 import ipaddress
-import logging
 import random
 import re
 import socket
@@ -39,7 +39,7 @@ class HubServerSession:
         self.thread.start()
 
     def sigStopThread(self):
-        logging.info("Ending RTSP handler thread")
+        log().info("Ending RTSP handler thread")
         self.ended = True
         self.rtspClient.shutdown(socket.SHUT_WR)
 
@@ -61,7 +61,7 @@ class HubServerSession:
                     data = self.rtspClient['connection'].recv(config.MAX_RECV)
                 except socket.timeout:
                     if ((calendar.timegm(time.gmtime()) - lastRxTime) > timeout):
-                        logging.info("RTSP/HTTP session time out")
+                        log().info("RTSP/HTTP session time out")
                         self.ended = True
                     if 'rtcpRxEvent' in self.rtspClient and self.rtspClient['rtcpRxEvent']:
                         lastRxTime = calendar.timegm(time.gmtime())
@@ -70,14 +70,14 @@ class HubServerSession:
                 if data:
                     lastRxTime = calendar.timegm(time.gmtime())
                     request = data.decode("utf8").replace('\r', '').split('\n')
-                    logging.debug("Received: %s", request)
+                    log().debug("Received: %s", request)
 
                     firstLine = request[0].split(' ')
                     if len(firstLine) == 1:
                         #requestCommand and requestProtocol remembered from last time
                         requestPath = firstLine[0]
                     elif len(firstLine) < 3:
-                        logging.warning("Unknown request type")
+                        log().warning("Unknown request type")
                         continue
                     else:
                         requestCommand = firstLine[0]
@@ -95,7 +95,7 @@ class HubServerSession:
                         seq = self.seq(request)
 
                         if request[0] and seq > 0:
-                            logging.debug("RTSP command %s", requestCommand)
+                            log().debug("RTSP command %s", requestCommand)
 
                             if requestCommand.upper() == "OPTIONS":
                                 r = "RTSP/1.0 200 OK\r\n"
@@ -153,8 +153,8 @@ class HubServerSession:
                                     self.rtspClient['packetRedundancy'] = False
                                     if config.PACKET_REDUNDANCY_FLAG in params:
                                         self.rtspClient['packetRedundancy'] = (params[config.PACKET_REDUNDANCY_FLAG].lower() == "true")
-                                        logging.debug("Setting packet redundancy enable for sessionId : %s", self.rtspClient["sessionId"])
-                                        logging.debug("Setting packet redundancy enable for sessionId : %s", self.rtspClient["sessionId"])
+                                        log().debug("Setting packet redundancy enable for sessionId : %s", self.rtspClient["sessionId"])
+                                        log().debug("Setting packet redundancy enable for sessionId : %s", self.rtspClient["sessionId"])
                                     if self.session(request) == self.rtspClient['sessionId']:
                                         MulticastRxUniTx.addRtspClient(self.rtspClient)
                                         r = "RTSP/1.0 200 OK\r\n"
@@ -194,17 +194,17 @@ class HubServerSession:
 
                     if len(r) > 0:
                         count = self.rtspClient['connection'].send(str.encode(r))
-                        logging.debug('Sending %d bytes :', count)
-                        logging.debug(r)
+                        log().debug('Sending %d bytes :', count)
+                        log().debug(r)
                 else:
                     break
             except Exception as e:
-                logging.error(e.__doc__)
-                logging.error(e.message)
+                log().error(e.__doc__)
+                log().error(e.message)
                 time.sleep(1)
         # At end of thread stop the client
         if 'sessionId' in self.rtspClient:
-            logging.info("Ending session %s", self.rtspClient['sessionId'])
+            log().info("Ending session %s", self.rtspClient['sessionId'])
             MulticastRxUniTx.removeRtspClient(self.rtspClient['sessionId'])
 
     def seq(self, request):
@@ -229,7 +229,7 @@ class HubServerSession:
 
     def endit(self, message):
         self.ended = True
-        logging.error(message)
+        log().error(message)
         return 'RTSP/1.0 400 BAD REQUEST\r\n\r\n'
 
 

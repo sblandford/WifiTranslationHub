@@ -6,17 +6,15 @@ import time
 
 # Based on https://github.com/TibbersDriveMustang/Video-Streaming-Server-and-Client
 
+from Log import log
 try:
     import config
 except ImportError:
     import config_dist as config
-import logging
 import socket
 import threading
 
 import RTSPServerSession
-import BackEnd
-
 
 ended = False
 thread = False
@@ -24,13 +22,13 @@ hubTcpSocket = False
 
 def runThread():
     global thread
-    logging.info('Starting Hub server thread')
+    log().info('Starting Hub server thread')
     thread = threading.Thread(target=server)
     thread.start()
 
 def sigStopThread():
     global ended
-    logging.info('Ending Hub server thread')
+    log().info('Ending Hub server thread')
     ended = True
 
 def waitStopThread():
@@ -47,7 +45,7 @@ def server():
     hubTcpSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     hubTcpSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     hubTcpSocket.bind(('', config.HUB_SERVER_PORT))
-    logging.info("Hub server Listening for incoming request on port %d...", config.HUB_SERVER_PORT)
+    log().info("Hub server Listening for incoming request on port %d...", config.HUB_SERVER_PORT)
     hubTcpSocket.listen(config.HUB_LISTEN_BACKLOG)
     hubTcpSocket.settimeout(config.SOCKET_TIMEOUT)
     # Receive client info (address,port) through RTSP/HTTP/TCP session
@@ -59,11 +57,11 @@ def server():
             except socket.timeout:
                 continue
 
-            logging.debug('Received from %s on port %s', clientInfo['IP'], clientInfo['port'])
+            log().debug('Received from %s on port %s', clientInfo['IP'], clientInfo['port'])
             RTSPServerSession.HubServerSession(clientInfo).runThread()
         except Exception as e:
-            logging.error(e.__doc__)
-            logging.error(e.message)
+            log().error(e.__doc__)
+            log().error(e.message)
             time.sleep(1)
     hubTcpSocket.close()
 

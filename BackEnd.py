@@ -2,10 +2,10 @@
 
 __author__ = "Simon Blandford"
 
+from Log import log
 import ipaddress
 import math
 import json
-import logging
 try:
     import config
 except ImportError:
@@ -65,9 +65,9 @@ def respond(path, params, fullPath, onLan = True):
         if not onLan:
             code = 400
             problem = "Attempt to access admin page from WAN"
-            logging.warning(problem)
+            log().warning(problem)
             return code, problem, callback + '(' + content + ')', cacheSeconds
-        logging.debug("Full status requested")
+        log().debug("Full status requested")
         password = config.DEFAULT_ADMIN_PASSWORD
         if 'adminPassword' in channelDict:
             password = channelDict['adminPassword']
@@ -78,7 +78,7 @@ def respond(path, params, fullPath, onLan = True):
             content = json.dumps(
                 {'problem': problem}
             )
-            logging.warning(problem)
+            log().warning(problem)
         else:
             #Only consider commands if authentication checks out
             if 'chname' in params:
@@ -89,7 +89,7 @@ def respond(path, params, fullPath, onLan = True):
                         code = 400
                         problem = "chname channel number too large, must be in range 00 to " + \
                             format(config.MAX_CHANNELS - 1, '02d')
-                        logging.warning(problem)
+                        log().warning(problem)
                     else:
                         chName = params['chname'][2:]
                         with privChannelDict['channels'][channel]['lock']:
@@ -101,22 +101,22 @@ def respond(path, params, fullPath, onLan = True):
                 else:
                     code = 400
                     problem = "chname parameter must by two decimal digits followed by name, got " + params['chname']
-                    logging.warning(problem)
+                    log().warning(problem)
             if code == 200 and 'adminpw' in params:
                 if len(params['adminpw']) >= config.ADMIN_PASSWORD_MIN_LENGTH:
                     channelDict['adminPassword'] = params['adminpw']
-                    logging.info("Password changed")
+                    log().info("Password changed")
                 else:
                     code = 400
                     problem = "Password less than minimum acceptable length of " + str(config.ADMIN_PASSWORD_MIN_LENGTH) + " characters"
-                    logging.warning(problem)
+                    log().warning(problem)
             if code == 200 and 'id' in params:
                 channel = int(params['id'][0:2])
                 if channel >= config.MAX_CHANNELS:
                     code = 400
                     problem = "chname channel number too large, must be in range 00 to " + \
                               format(config.MAX_CHANNELS - 1, '02d')
-                    logging.warning(problem)
+                    log().warning(problem)
                 else:
                     id = params['id'][3:]
                     if len(id) < 1:
@@ -158,7 +158,7 @@ def respond(path, params, fullPath, onLan = True):
                         code = 400
                         problem = "open channel number too large, must be in range 00 to " + \
                                   format(config.MAX_CHANNELS - 1, '02d')
-                        logging.warning(problem)
+                        log().warning(problem)
                     else:
                         if params['open'][2:3] == "+":
                             channelDict['channels'][channel]['open'] = True
@@ -167,11 +167,11 @@ def respond(path, params, fullPath, onLan = True):
                         else:
                             code = 400
                             problem = "Expecting + or - after channel number"
-                            logging.warning(problem)
+                            log().warning(problem)
                 else:
                     code = 400
                     problem = "chname parameter must by two decimal digits followed by name, got " + params['chname']
-                    logging.warning(problem)
+                    log().warning(problem)
 
             if code == 200:
                 content = json.dumps(
@@ -184,7 +184,7 @@ def respond(path, params, fullPath, onLan = True):
         cacheSeconds = config.HTTP_STAT_CACHE_SECONDS
         content = ''
         problem = ''
-        logging.debug("Short status requested")
+        log().debug("Short status requested")
         if not 'channelStatLock' in channelStatDict:
             channelStatDict['channelStatLock'] = threading.Lock()
         with channelStatDict['channelStatLock']:
@@ -246,7 +246,7 @@ def inRange(lat, lon):
     d = config.HUB_WAN_LOCATION_EARTH_RADIUS_METERS * c
 
     if config.HUB_WAN_LOCATION_RADIUS_METERS <= d:
-        logging.info("Attempt to connect from client %f meters away", d)
+        log().info("Attempt to connect from client %f meters away", d)
     return (config.HUB_WAN_LOCATION_RADIUS_METERS > d)
 
 
