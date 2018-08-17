@@ -101,9 +101,12 @@ Name: "{commondesktop}\{#MyAppName}"; Filename: "http://localhost:8080/admin.htm
 Name: "{group}\Uninstall"; Filename: "{app}\unins000.exe"
 
 [Run]
-;Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+Filename: {sys}\netsh.exe; Parameters: "firewall add allowedprogram""{app}\{#MyAppExeName}"" ""Wifi Translation Hub"" ENABLE ALL"; StatusMsg:Notifying Firewall; Flags: runhidden; MinVersion: 0,5.01.2600sp2
+Filename: {sys}\netsh.exe; Parameters: firewall set portopening protocol=TCP port=8080 name=WifiTranslation mode=ENABLE; StatusMsg: Opening TCP Port 8080; Flags: runhidden
+Filename: {sys}\netsh.exe; Parameters: firewall set multicastbroadcastresponse mode=ENABLE; StatusMsg: Enabling Multicast; Flags: runhidden
 Filename: {app}\nssm.exe; Parameters: "install wifiTranslationHubSrv ""{app}\{#MyAppExeName}""" ; Flags: runhidden
 Filename: {app}\nssm.exe; Parameters: "start wifiTranslationHubSrv"; Flags: runhidden
+
 Filename: "http://localhost:8080/admin.html"; Flags: shellexec runasoriginaluser postinstall; Description: "Open the url."
 
 [UninstallRun]
