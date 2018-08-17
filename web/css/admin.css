@@ -7,7 +7,12 @@
 .globalControls table td:nth-child(2) {
     width: 20em;
 }
-
+.globalControls table td:nth-child(3) {
+    width: 6em;
+}
+.globalControls table td:nth-child(4) {
+    width: 6em;
+}
 
 
 /* The Modal (background) */
@@ -149,4 +154,33 @@
 .countDigits {
     text-align: right;
     padding-right: 1em;
+}
+
+/* Hide until implemented */
+#headphones {
+    visibility: hidden;
+}
+
+
+.qrShow {
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+/* QR code display box*/
+.qrBox {
+    opacity: 0;
+    display: block;
+    visibility: hidden;
+    z-index: 1;
+    background-color: white;
+    position: fixed;
+    top: 10%;
+    left: 10%;
+    /* bring your own prefixes */
+    /* transform: translate(-50%, -50%); */
+    box-shadow: 0em 0.5em 1em 0em rgba(0,0,0,0.2);
+}
+/* QR Object */
+.qrObj {
+    max-width : 50em;
 }

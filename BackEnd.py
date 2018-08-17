@@ -14,6 +14,7 @@ import re
 import threading
 
 import MulticastRxUniTx
+import IpBroadcaster
 
 lock = None
 privChannelDict = None
@@ -291,3 +292,13 @@ def getSingleIp(ips):
     if len(ips.split(",")) > 1:
         ip = ips.split(",")[0]
     return ip
+
+def linkAddress():
+    serverPort = config.WEB_SERVER_PORT
+    if config.HUB_ACCESS_PORT > 0:
+        serverPort = config.HUB_ACCESS_PORT
+    serverPortText = ":" + str(serverPort)
+    if (serverPort == 80 and config.HUB_LAN_PROTOCOL == "http") or (
+            serverPort == 443 and config.HUB_LAN_PROTOCOL == "https"):
+        serverPortText = ""
+    return config.HUB_LAN_PROTOCOL + "://" + IpBroadcaster.hubAddress + serverPortText

@@ -18,7 +18,6 @@ import sys
 import time
 
 import BackEnd
-import IpBroadcaster
 import MulticastRxUniTx
 import RTSPServerSession
 
@@ -163,14 +162,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 self._error(code, problem)
             return
         elif re.match("\/qr($|\/)", path):
-            serverPort = config.WEB_SERVER_PORT
-            accessCode = ""
-            if config.HUB_ACCESS_PORT > 0:
-                serverPort = config.HUB_ACCESS_PORT
-            serverPortText = ":" + str(serverPort)
-            if (serverPort == 80 and config.HUB_LAN_PROTOCOL == "http") or (serverPort == 443 and config.HUB_LAN_PROTOCOL == "https"):
-                serverPortText = ""
-            linkAddr = config.HUB_LAN_PROTOCOL + "://" + IpBroadcaster.hubAddress  + serverPortText + accessCode
+            linkAddr = BackEnd.linkAddress()
             contentType = "text/html"
             content  = "<!DOCTYPE html>\n"
             content += "<html>\n"
