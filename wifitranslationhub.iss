@@ -101,14 +101,20 @@ Name: "{commondesktop}\{#MyAppName}"; Filename: "http://localhost:8080/admin.htm
 Name: "{group}\Uninstall"; Filename: "{app}\unins000.exe"
 
 [Run]
-Filename: {sys}\netsh.exe; Parameters: "firewall add allowedprogram""{app}\{#MyAppExeName}"" ""Wifi Translation Hub"" ENABLE ALL"; StatusMsg:Notifying Firewall; Flags: runhidden; MinVersion: 0,5.01.2600sp2
-Filename: {sys}\netsh.exe; Parameters: firewall set portopening protocol=TCP port=8080 name=WifiTranslation mode=ENABLE; StatusMsg: Opening TCP Port 8080; Flags: runhidden
-Filename: {sys}\netsh.exe; Parameters: firewall set multicastbroadcastresponse mode=ENABLE; StatusMsg: Enabling Multicast; Flags: runhidden
+;Useful URLs for example advfirewall commands
+;https://github.com/MicrosoftDocs/windows-itpro-docs/blob/master/windows/security/identity-protection/windows-firewall/windows-firewall-with-advanced-security-administration-with-windows-powershell.md
+;https://support.microsoft.com/en-gb/help/947709/how-to-use-the-netsh-advfirewall-firewall-context-instead-of-the-netsh
+;Firewall settings
+Filename: {sys}\netsh.exe; Parameters: "advfirewall firewall rule name=""{#MyAppName}"" dir=in action=allow program=""{app}\{#MyAppExeName}"" enable=yes"; StatusMsg:Notifying Firewall; Flags: runhidden; MinVersion: 0,5.01.2600sp2
+Filename: {sys}\netsh.exe; Parameters: "advfirewall firewall add rule name=""Open Port 8080 for {#MyAppName}"" dir=in action=allow protocol=TCP localport=8080"; StatusMsg:Notifying Firewall; Flags: runhidden
+Filename: {sys}\netsh.exe; Parameters: "advfirewall set allprofiles settings unicastresponsetomulticast enable"; StatusMsg:Notifying Firewall; Flags: runhidden
+;Service install
 Filename: {app}\nssm.exe; Parameters: "install wifiTranslationHubSrv ""{app}\{#MyAppExeName}""" ; Flags: runhidden
 Filename: {app}\nssm.exe; Parameters: "start wifiTranslationHubSrv"; Flags: runhidden
-
+;Open web URL of service
 Filename: "http://localhost:8080/admin.html"; Flags: shellexec runasoriginaluser postinstall; Description: "Open the url."
 
 [UninstallRun]
 Filename: {app}\nssm.exe; Parameters: "stop wifiTranslationHubSrv" ; Flags: runhidden
 Filename: {app}\nssm.exe; Parameters: "remove wifiTranslationHubSrv" ; Flags: runhidden
+
