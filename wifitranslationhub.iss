@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Wifi Translation Hub"
-#define MyAppVersion "0.1"
+#define MyAppVersion "0.2"
 #define MyAppPublisher "BKWSU"
 #define MyAppURL "https://github.com/sblandford/WifiTranslationHub"
 #define MyAppExeName "wifitranslationhub.exe"
