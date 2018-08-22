@@ -3,21 +3,46 @@ var gStatusUpdate = false;
 
 var gPacket;
 var gUpdateSeq = false;
-var seqTimer = false;
 var gCtx;
 
+//Packet capture
+var gNextSeqQry = -1;
+var gPktTime = -1;
+var gPkts = {};
+var gPktFails = 0;
+var gMaxPktFails = 20;
+var gPktLifetime = 1000;
+var gPktRetry = 20;
+var gBuffStarted = false;
+var gBufferLoop = null;
+var gSeqUpdateLoop = null;
+var gWatchDogTmr = null;
+var gWatchDogInterval = 2000;
+var gSeq = -1;
+var gSeqArrived = -1;
+var gMaxSeqOops = 10;
+var gSeqUpdateTime = 60000;
+var gSeqStatCount = 10;
+var gWatchDogOK = true;
+
+//Audio parameters
+var gDecodeLoop = null;
+var gAudioPacketBufferTime = 200;
+var gstartDecodeTimeStamp = null;
+var gDecodeTime = null;
+
 //Starting buffer time, can increase as required
-var gFutureTime = 0.5;
+var gFutureTime = 0.05;
 var gAudioBufferTime = 0.3;
-var gFutureIncrement = 0.1;
+var gFutureIncrement = 0.01;
 var gMaxChannels = 10;
 var gAppUrl = "https://play.google.com/store/apps/details?id=eu.bkwsu.webcast.wifitranslation";
-var gJsonpTimeout = 2000;
+var gJsonpTimeout = 500;
 
 var gPrevChannel = 0;
 var gPlaying = false;
 var gSubsequentError = false;
-var gPrevPlaying = false;
+var gPrevPlayIntention = false;
 var gPlayError = false;
 var gPrevPlayError = false;
 var gLang = window.navigator.language.substring(0,2);
@@ -38,6 +63,14 @@ var gOnLan = false;
 var gStartAfterGeo = false;
 
 
+//State
+var gPlayTimeout;
+var gPlayTimeoutMs = 1000 * 60 * 60 * 2; // 2 hours
+var gPlayIntention = false;
+var gPlayerHope = false;
+var gEnacting = false;
+
+
 function mobileAndTabletcheck () {
     var check = false;
     (function(a){if(/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino|android|ipad|playbook|silk/i.test(a)||/1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw-(n|u)|c55\/|capi|ccwa|cdm-|cell|chtm|cldc|cmd-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc-s|devi|dica|dmob|do(c|p)o|ds(12|-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(-|_)|g1 u|g560|gene|gf-5|g-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd-(m|p|t)|hei-|hi(pt|ta)|hp( i|ip)|hs-c|ht(c(-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i-(20|go|ma)|i230|iac( |-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|-[a-w])|libw|lynx|m1-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|-([1-8]|c))|phil|pire|pl(ay|uc)|pn-2|po(ck|rt|se)|prox|psio|pt-g|qa-a|qc(07|12|21|32|60|-[2-7]|i-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h-|oo|p-)|sdk\/|se(c(-|0|1)|47|mc|nd|ri)|sgh-|shar|sie(-|m)|sk-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h-|v-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl-|tdg-|tel(i|m)|tim-|t-mo|to(pl|sh)|ts(70|m-|m3|m5)|tx-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas-|your|zeto|zte-/i.test(a.substr(0,4))) check = true;})(navigator.userAgent||navigator.vendor||window.opera);
@@ -48,11 +81,17 @@ function mobileAndTabletcheck () {
 //https://gist.github.com/gf3/132080
 var loadJSONP = (function(){
     var unique = 0;
-    return function(url, callback, errCallback, context) {
+    return function(url, callback, errCallback, context, callbackName) {
     // INIT
     var name = "jp" + unique++;
-    if (url.match(/\?/)) url += "&callback="+name;
-    else url += "?callback="+name;
+    if (callbackName) {
+        name = callbackName;
+    }
+    if (url.match(/\?/)) {
+        url += "&callback="+name;
+    } else {
+        url += "?callback="+name;
+    }
     
     // Create script
     var script = document.createElement('script');
@@ -83,7 +122,11 @@ function expireJSONP (name, script, errCallback, context) {
             errCallback.call((context || window));
         }
         //Clean up
-        document.getElementsByTagName('head')[0].removeChild(script);
+        try {
+            document.getElementsByTagName('head')[0].removeChild(script);
+        } catch (err) {
+            ;//Pass
+        }
         script = null;
         delete window[name];
     }
@@ -104,9 +147,40 @@ function pollStatus () {
                 gStatus = newStatus;
                 gStatusUpdate = true;
                 updateDisplay();
+                if (!checkStreamOK) {
+                    fullStopPlayer();
+                    updateDisplay();
+                }
             }
-        }
+        }, null, null, "jpstat"
     );
+    //Get player into intended state
+    if (gPlayIntention && !gPlaying && !gEnacting) {
+        startPlayer();
+        updateDisplay();
+    }
+    if (!gPlayIntention && gPlaying && !gEnacting) {
+        stopPlayer();
+        updateDisplay();
+    }
+}
+
+function checkStreamOK () {
+    //Check channel is still valid and in range
+    var channel = parseInt(localStorage.channel);
+    return (gStatus.hasOwnProperty[channel] && gStatus[channel].hasOwnProperty['valid'] && gStatus[channel]['valid']);
+}
+
+function watchDog () {
+    if (!gWatchDogTmr) {
+        gWatchDogTmr = setInterval(function () {
+            if (!gWatchDogOK) {
+                StopPlayer();
+                updateDisplay();
+            }
+            gWatchDogOK = false;
+        }, gWatchDogInterval);
+    }
 }
 
 function updateDisplay() {
@@ -149,14 +223,14 @@ function updateDisplay() {
                     if (chNameId.classList.contains('chNameDead')) {
                         chNameId.classList.remove('chNameDead');
                     }
-                    startStopButtonId.innerText = LANG[gLang][(gPlaying)?"stop":"start"];
+                    startStopButtonId.innerText = LANG[gLang][(gPlayIntention)?"stop":"start"];
                     startStopButtonId.disabled = false;
                 } else {
                     if (!chNameId.classList.contains('chNameDead')) {
                         chNameId.classList.add('chNameDead');
                     }
-                    startStopButtonId.innerText = (gPlaying)?LANG[gLang]["stop"]:"-";
-                    startStopButtonId.disabled = !gPlaying;
+                    startStopButtonId.innerText = (gPlayIntention)?LANG[gLang]["stop"]:"-";
+                    startStopButtonId.disabled = !gPlayIntention;
                 }
             } else {
                 startStopButtonId.innerText = LANG[gLang]["outRange"];
@@ -177,122 +251,308 @@ function isNormalInteger(str) {
     return /^\+?(0|[1-9]\d*)$/.test(str);
 }
 
-
-function readPackets () {
+function getNextSeq () {
     var channel = parseInt(localStorage.channel);
-
     var channelText = (channel <= 9)?("0" + channel):channel.toString();
     channelText = channelText.substr(channelText.length - 2);
     var url = "/rtp/" + channelText + "?uuid=" + localStorage.uuid;
-    
+
     if (gGeoLat) {
         url += "&lat=" + gGeoLat + "&lon=" + gGeoLon;
     }
-
     gUpdateSeq = false;
     loadJSONP(
         url,
         function(thisSeq) {
             if (thisSeq.hasOwnProperty("seq")) {
                 //Wait for next packet
-                var seq = (thisSeq["seq"] + 1 + (gPlayError?1:0)) & 0xFFFF;
+                var seq = (thisSeq["seq"] + 1) & 0xFFFF;
                 console.log("Next Seq available : " + seq);
-                readNextPacket(seq);
+                if (gSeq == -1) {
+                    testPacket (seq);
+                }
+                //Panic if wildly wrong
+                if ((gSeq != -1) && diffSeq(gSeq, seq) > gMaxSeqOops) {
+                    console.log("Large difference between calculated and actual seq");
+                    stopPlayer();
+                }
+                gNextSeqQry = seq;                
             }
         },
         function () {
             stopPlayer();
-            updateDisplay();
         }
-    );       
+    );
+}
+
+//Measure the timecode difference between two packets
+function testPacket (seq) {
+    fetchNewPacket(seq, function (seq) {
+        if (pktValid(gPkts[seq])) {
+            var time1 = pktTimeCode(gPkts[seq]);
+            seq++;
+            fetchNewPacket(seq, function (seq) {
+                if (pktValid(gPkts[seq])) {
+                    var time2 = pktTimeCode(gPkts[seq]);
+                    gPktTime = time2 - time1;
+                    console.log("Packet time is : " + gPktTime + "ms");
+                    fillBuffer(seq);
+                    playBuffer(seq);
+                    watchDog();
+                }
+            });
+        }
+    });
 }
 
 
-//Read RTP packets over HTTP
-function readNextPacket (seq) {
+function fillBuffer(seq) {
+    if (gPktTime < 0) {
+        return;
+    }
+    gSeq = seq;
+    gNextSeqQry = -1;
+    //Re-check seq number with server every minute
+    //Also refreshes UUID timeout for stats
+    if (!gSeqUpdateLoop) {
+        gSeqUpdateLoop = setInterval(function() {
+            getNextSeq ();
+        }, gSeqUpdateTime);
+    }
+    //Just keep loading packets like crazy
+    if (!gBufferLoop) {
+        gBufferLoop = setInterval(function() {
+            gSeq = (gSeq + 1) & 0xFFFF;
+            //If we have new sync for server use that
+            if (gNextSeqQry > 0) {
+                gSeq = gNextSeqQry;
+                gNextSeqQry = -1;
+            }
+            fetchNewPacket(gSeq);
+        }, gPktTime);
+    }
+}
+
+//Returns true if sequence number a > b, or a >= b
+//Assumes that both a and b are incrementing counters
+//closely following each other
+function cmpSeq(a, b, isEqual = false) {
+    if ((a & 0x8000) && !(b & 0xC000)) {
+        //b > a rollover assumed
+        return false;
+    }
+    if (!(a & 0xC000) && (b & 0x8000)) {
+        //a > b rollover assumed
+        return true;
+    }
+    return (isEqual)?(a >= b):(a > b);
+}
+
+function diffSeq(a, b) {
+    if ((a & 0x8000) && !(b & 0xC000)) {
+        //b > a rollover assumed
+        b += 0x10000;
+    }
+    if (!(a & 0xC000) && (b & 0x8000)) {
+        //a > b rollover assumed
+         a += 0x10000;
+    }
+    return Math.abs(a - b);
+}
+
+function playBuffer(seq) {
+    var packetLag = Math.ceil(gAudioPacketBufferTime / gPktTime)
+    var statCounter = 0;
+    var nextFail = false;
+    var futureFail = false;
+    var currentFail = false;
+    var reSync = false;
+    console.log("Playing behind by " + packetLag + " packets");
+    seq = (seq - packetLag) & 0xFFFF;
+    if (!gDecodeLoop) {
+        gDecodeLoop = setInterval(function() {
+            var seqPrev = seq;
+            var seqPrevOk = ((gPkts.hasOwnProperty(seqPrev) && gPkts[seqPrev]) != false);
+            
+            seq = (seq + 1) & 0xFFFF;
+            
+            var seqOK = ((gPkts.hasOwnProperty(seq) && gPkts[seq]) != false);
+            var seqNext = (seq + 2) & 0xFFFF;
+            var seqNextOk = ((gPkts.hasOwnProperty(seqNext) && gPkts[seqNext]) != false);
+            var seqFuture = (seq + 3) & 0xFFFF;
+            var seqFutureOk = ((gPkts.hasOwnProperty(seqFuture) && gPkts[seqFuture]) != false);
+            
+            if (!seqNextOk) {
+                nextFail = true;
+            }
+            if (!seqFutureOk) {
+                futureFail = true;
+            }
+
+            //Verbose
+            //console.log ((seqPrevOk | 0) + " " + (seqOK | 0) + " " + (seqNextOk| 0) + " " + (seqFutureOk| 0) + ", Seq : " + seq + ", Available : " + gSeqArrived );
+            if (seqOK) {
+                playRtpPacket(gPkts[seq], reSync);
+                //Clear reSync flag
+                reSync = false;
+                //Delete last packet
+                if (gPkts.hasOwnProperty(seqPrev)) {
+                    delete gPkts[seqPrev];
+                }
+            } else {
+                currentFail = true;
+                if (seqPrevOk) {
+                    //This isn't delete but will be picked up
+                    //by lifetime expire
+                    pokePktTimeCode(gPkts[seqPrev], (seqPrev - seq));
+                    console.log("Filling in for missing packet : " + seq + " with " + seqPrev);
+                    playRtpPacket(gPkts[seqPrev]);
+                }
+            }
+            //Evaluate stats
+            if (statCounter++ > gSeqStatCount) {
+                statCounter = 0;
+
+                console.log ((seqPrevOk | 0) + " " + (seqOK | 0) + " " + (seqNextOk| 0) + " " + (seqFutureOk| 0) + ", Seq : " + seq + ", Available : " + gSeqArrived );
+
+                
+                //Increase lag if problems or potential problems occured
+                if (currentFail || nextFail) {
+                    seq = (seq - 1) & 0xFFFF;
+                    reSync = true;
+                    console.log("Increasing buffer length by 1 : " + (gSeqArrived - seq));
+            } else {           
+                    //Decrease lag if safe to do so
+                    if (!futureFail && ((gSeq - seq) > 1)) {
+                        console.log("Decreasing buffer length by 1");
+                        if (seqOK) {
+                            console.log("Filling in for missing packet : " + (seq + 1) + " with " + seq);
+                            pokePktTimeCode(gPkts[seq], 1);
+                            playRtpPacket(gPkts[seq]);
+                        }
+                        seq = (seq + 1) & 0xFFFF;
+                        reSync = true;
+                    }
+                }
+                currentFail = false;
+                nextFail = false;
+                futureFail = false;
+            }
+            
+            
+        }, gPktTime);
+    }
+}
+
+function fetchNewPacket (seq, handler) {
+    //Create placeholder for received packet
+    gPkts[seq] = null;
+    fetchPacket(seq, handler);
+}
+
+function packetFail () {
+    if (gPktFails++ > gMaxPktFails) {
+        console.log("Too many consecutive bad packets");
+        stopPlayer();
+    }
+}
+
+function fetchPacket (seq, handler) {
+    //Abort if packet has expired
+    if (!gPkts.hasOwnProperty(seq)) {
+        return
+    }
+    
     var req = new XMLHttpRequest();
     
+    //Create URL
     var channel = parseInt(localStorage.channel);
-
     var channelText = (channel <= 9)?("0" + channel):channel.toString();
     channelText = channelText.substr(channelText.length - 2);
     var url = "/rtp/" + channelText + "/" + seq;
 
-    console.log("Request seq : " + seq);
+    //Verbose
+    //console.log("Request seq : " + seq);
     req.onload = function () {
         if (req.status == 200) {
+            //Abort if packet placeholder has expired
+            if (!gPkts.hasOwnProperty(seq)) {
+                return;
+            }
+
             var arrayBuffer = req.response;
-
-            gSubsequentError = false;
-            if (arrayBuffer) {
-                gPacket = new Uint8Array(arrayBuffer);
-
-                if (gPacket && gPlaying) {
-                    //Only proceed if packet is for this channel
-                    var channel = parseInt(req.responseURL.match(/\/[0-9][0-9](\?|\/)/)[0].match(/[0-9][0-9]/)[0]);
-                    if (channel == channel) {
-                        playRtpPacket(gPacket);
+            
+            //Abort if no data
+            if (!arrayBuffer) {
+                return
+            }
+            
+            var packet = new Uint8Array(arrayBuffer);
+            
+            if (packet) {
+                //Only proceed if packet is for this channel
+                var channel = parseInt(req.responseURL.match(/\/[0-9][0-9](\?|\/)/)[0].match(/[0-9][0-9]/)[0]);
+                if (channel == channel) {
+                    gPktFails = 0;
+                    gPkts[seq] = packet;
+                    //Most recently arrived packet
+                    if (cmpSeq(seq, gSeqArrived) > gMaxSeqOops) {
+                        console.log("Massive calculed seq: " + seq + " vs available seq : " + gSeqArrived);
+                        gSeqArrived = seq;
                     }
-                }
-                
-                //Next gPacket
-                if (gPlaying) {
-                    if (gUpdateSeq) {
-                        //Query next packet
-                        readPackets();
-                    } else {
-                        //Calculate next packet
-                        seq = (seq + 1) & 0xFFFF;
-                        readNextPacket(seq);
+                    if (seq > gSeqArrived) {
+                        gSeqArrived = seq;
+                    }
+                    if (handler) {
+                        handler(seq);
                     }
                 }
             }
         } else {
-            badPacket();
+            retryPacket();
         }
     };
     //Try again after time
     req.onerror = function () {
-        badPacket();
+        retryPacket(seq);
     };
+    req.ontimeout = function () {
+        if (gPkts.hasOwnProperty(seq)) {
+            delete gPkts[seq];
+        }        
+        packetFail();
+    }
 
     req.responseType = "arraybuffer";
     req.open("GET", url);
     req.setRequestHeader("Cache-Control","");
     req.setRequestHeader("pragma","");
-    req.send();
-    
+    req.timeout = gPktLifetime;
+    req.send();    
 }
-
-function badPacket () {
-    if (gPlaying) {
-        if (gSubsequentError) {
-            setTimeout(function () {
-                readPackets();
-            }, 1000);
-        } else {
-            reallyBad = true;
-            gPlayError = true;
-            readPackets();
-        }
+function retryPacket (seq) {
+    //Retry packet after delay if still valid
+    if (gPkts.hasOwnProperty(seq)) {
+        packetFail();
+        setTimeout(function () {
+            console.log("Retrying packet : " + seq);
+            fetchPacket(seq);
+        }, gPktRetry);        
     }
-    gPlayError = true;
 }
 
-function playRtpPacket(gPacket) {
+
+function playRtpPacket(gPacket, reSync = false) {
     
     var timePresentation;
     if (gPlaying) {        
         //Quit if this doesn't look like a valid AMR RTP packet
-        if ((gPacket[0] != 0x80) && (gPacket[1] != 0xE1)) {
+        if (!pktValid(gPacket)) {
             return;
         }
         
-        var rtpTimeCode = (gPacket[4] << 24) + (gPacket[5] << 16) + (gPacket[6] << 8) + gPacket[7];
-        
-        //Sample rate is always 16000 Hz
-        var timeRtpMsNow = (rtpTimeCode / 16);
-        if ((!gTimeMsRtpStart || gPlayError) && gPlaying) {
+        var timeRtpMsNow = pktTimeCode (gPacket);
+        if ((!gTimeMsRtpStart || gPlayError || reSync) && gPlaying) {
             gTimeMsRtpStart = timeRtpMsNow;
             gTimeCtxRtpOffset = gCtx.currentTime;
         }
@@ -305,9 +565,34 @@ function playRtpPacket(gPacket) {
         }
         var timeRtp = ((timeRtpMsNow - gTimeMsRtpStart) / 1000.0) + gTimeCtxRtpOffset;
     
-    
+        if (!gstartDecodeTimeStamp) {
+            gstartDecodeTimeStamp = (new Date).getTime();
+        }
         gAmrwbWorker.postMessage([gPacket, timeRtp]);
     }
+}
+
+function pktValid(packet) {
+    //Valid AMR-WB packet?
+    return (packet && ((packet[0] == 0x80) && (packet[1] == 0xE1)))
+}
+function pktTimeCode (packet) {
+    var rtpTimeCode = (packet[4] << 24) + (packet[5] << 16) + (packet[6] << 8) + packet[7];
+    //Magic number 16 is because AMR-WB sample rate is always 16000 Hz
+    return (rtpTimeCode / 16);    
+}
+function pokePktTimeCode (packet, seqOffset) {
+    var rtpTimeCode = (packet[4] << 24) + (packet[5] << 16) + (packet[6] << 8) + packet[7];
+    //Magic number 16 is because AMR-WB sample rate is always 16000 Hz
+    var offset = seqOffset * gPktTime * 16;
+    
+    rtpTimeCode += offset;
+    
+    //Insert new timecode
+    packet[4] = rtpTimeCode >> 24;
+    packet[5] = (rtpTimeCode >> 16) & 0xFF;
+    packet[6] = (rtpTimeCode >> 8) & 0xFF;
+    packet[7] = rtpTimeCode & 0xFF;
 }
 
 function playPcm(samples, timeRtp) {
@@ -337,6 +622,7 @@ function playPcm(samples, timeRtp) {
                 out[i + 1] = int16sample & 255
             }
             document.getElementById("out").innerHTML = toHex(out, 48);*/
+            gWatchDogOK = true;
             gPlayError = false;
 
             if (!timePresentation) {
@@ -361,6 +647,15 @@ function playPcm(samples, timeRtp) {
 }
 
 gAmrwbWorker.onmessage = function (e) {
+    if (gstartDecodeTimeStamp) {
+        gDecodeTime = ((new Date).getTime() - gstartDecodeTimeStamp) / 1000.0;
+        
+        if (gDecodeTime > (gFutureTime / 2)) {
+            console.log("Increasing audio DSP time allocation from " + gFutureTime + " to " + (gFutureTime + gFutureIncrement));
+            gFutureTime += gFutureIncrement;
+        }
+    }
+    gstartDecodeTimeStamp = null;
     var samples = e.data[0];
     var timeRtp = e.data[1];
     playPcm(samples, timeRtp);
@@ -418,33 +713,32 @@ function ontouchendChannel(channel) {
         localStorage.channel = channel;
         updateDisplay();
         if (gPlaying) {
-            stopPlayer();
             startPlayer(localStorage.channel);
         }
     }
 }
 
+function clickEnact() {
+    if (gPlayIntention) {
+        gPlayIntention = false;
+        stopPlayer();
+    } else {
+        gPlayIntention = true;
+        startPlayer();
+    }
+    updateDisplay();    
+}
+
 function startStopPlayerClick() {
     if (!mobileAndTabletcheck()) {
-        if (gPlaying) {
-            stopPlayer();
-        } else {
-            startPlayer();
-        }
-        updateDisplay();
+        clickEnact();
     }
 }
 
 function startStopPlayerTouchend() {
     if (mobileAndTabletcheck()) {
-        if (gPlaying) {
-            stopPlayer();
-        } else {
-            startPlayer();
-        }
-        updateDisplay();
+        clickEnact();
     }
-    
 }
 
 
@@ -452,11 +746,11 @@ function startStopPlayerTouchend() {
 function buttonStatus () {
     channel = parseInt(localStorage.channel);
     if ((gPlayError != gPrevPlayError) ||
-        (gPlaying != gPrevPlaying) ||
+        (gPlayIntention != gPrevPlayIntention) ||
         (channel != gPrevChannel)) {
         for (var i=0; i < gMaxChannels; i++) {
             var element = document.getElementById("channelButton" + i);
-            if ((i == channel) && gPlaying) {
+            if ((i == channel) && gPlayIntention) {
                 element.classList.add(gPlayError?"errorState":"playing");
                 element.classList.remove(!gPlayError?"errorState":"playing");
             } else {
@@ -466,12 +760,16 @@ function buttonStatus () {
         }
         gPrevChannel = channel;
         gPrevPlayError = gPlayError;
-        gPrevPlaying = gPlaying;
+        gPrevPlayIntention = gPlayIntention;
     }
 }
 //setInterval(buttonStatus, 500);
 
 function startPlayer() {
+    gEnacting = true;
+    //Kill any existing players
+    stopPlayer();
+    console.log("Starting player");
     //Do we need to get position
     if (!gOnLan && !gGeoLat) {
         var geoDiv = document.getElementById("geoBox");
@@ -498,26 +796,54 @@ function startPlayer2 () {
         source.start();
     }
     
-    //Start the sequence query timer to ping every minute
-    gUpdateSeq = false;
-    seqTimer = setInterval(function() {
-        gUpdateSeq = true;
-    }, 60 * 1000); 
-
     playPcm.buffer = new Float32Array(0);
-    readPackets();    
+    
+    gSeq = -1;
+    getNextSeq ();
+    
+    //Stop player eventually to prevent forgotten app using too much data
+    gPlayTimeout = setTimeout(function () {
+        console.log("Player time out after " + (gPlayTimeoutMs / (1000 * 60 * 60)) + " hours");
+        fullStopPlayer();
+        updateDisplay();
+    }, gPlayTimeoutMs);
+    gEnacting = false;
+}
+
+function fullStopPlayer () {
+    gPlayIntention = false;
+    if (gPlayTimeout) {
+        clearInterval(gPlayTimeout);
+        gPlayTimeout = null;
+    }
+    stopPlayer();
 }
 
 function stopPlayer() {
+    gEnacting = true;
+    
+    console.log("Stopping player");
+    
     gPlaying = false;
-    if (seqTimer) {
-        clearInterval(seqTimer);
-        seqTimer = false;
-    }
+    gNextSeqQry = -1;
+    gPktTime = -1;    
+    
+  
     if (gCtx) {
         gCtx.close();
         gCtx = null;
     }
+    
+    //Stop packet reading loops
+    clearInterval(gBufferLoop);
+    clearInterval(gSeqUpdateLoop);
+    clearInterval(gDecodeLoop);
+    clearInterval(gWatchDogTmr);
+    gBufferLoop = null;
+    gSeqUpdateLoop = null;
+    gDecodeLoop = null;
+    gWatchDogTmr = null;
+    
     gPacket = null;
     gTimeMsRtpStart = null;
 
@@ -526,6 +852,7 @@ function stopPlayer() {
     
     gPlayError = false;
     gAmrwbWorker.postMessage([null, null]);
+    gEnacting = false;
 }
 
 //Drop down menu related
@@ -552,24 +879,6 @@ window.onclick = function(event) {
         boxDiv.classList.remove("qrShow");
     }
   }
-}
-
-function showQr() {
-    var boxDiv = document.getElementById("qrBox");
-    var boxObj = document.getElementById("qrObj");
-    var boxWidth = boxDiv.offsetWidth;
-    var boxHeight = boxDiv.offsetHeight;
-    
-    boxObj.width = document.documentElement.clientWidth;
-    boxObj.height = document.documentElement.clientHeight * 0.6;
-    
-    if (boxWidth < 400) {
-        scale = boxWidth / 400;
-        boxObj.style.transform = "scale(" + scale + ")";
-    } else {
-        boxObj.style.transform = "scale(1)";
-    }
-    boxDiv.classList.toggle("qrShow");
 }
 
 //Fetch coordinates if we have permission and we need to

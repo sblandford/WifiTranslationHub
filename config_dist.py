@@ -5,6 +5,11 @@ __author__ = "Simon Blandford"
 import logging
 
 LOG_LEVEL = logging.INFO
+LOG_FILE_PLATFORMS = ['Windows']
+LOG_FILE_FILENAME = "wifitranslationhub.log"
+LOG_FILE_MAX_SIZE = 5*1024*1024
+LOG_FILE_ROTATION_COUNT = 2
+LOG_FILE_FORMAT = "%(asctime)s %(levelname)s %(message)s"
 
 THREAD_WAIT = 3.0
 
@@ -24,7 +29,7 @@ HUB_LAN_PROTOCOL = "http"
 QR_CODE_INCLUDE_ANDROID_APP = True
 HUB_CONSIDER_LAN_ADDRESSES = []
 HUB_REWRITE_TO_LAN_URL = ["31.6.78.126"]
-LAN_RANGES = ["192.168.0.0/16", "10.0.0.0/8", "172.16.0.0/12"]
+LAN_RANGES = ["192.168.0.0/16", "10.0.0.0/8", "172.16.0.0/12", "127.0.0.0/8"]
 
 DEFAULT_ADMIN_PASSWORD = "admin"
 ADMIN_PASSWORD_MIN_LENGTH = 5

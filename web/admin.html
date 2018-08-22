@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <title>Translation Hub Admin</title>
     <link rel="stylesheet" type="text/css" href="css/admin.css">
-    <script src="js/lang.js"></script>
-    <script src="js/admin.js"></script>
+    <script src="js/lang.js?v1"></script>
+    <script src="js/common.js?v1"></script>    
+    <script src="js/admin.js?v1"></script>
 </head>
 <body>
     <div class="page">
@@ -23,6 +24,16 @@
                             <div id="adminpw">
                                 <button id="adminPwButton" onclick="setAdminPw();">Set/change password</button>
                             </div>
+                        </td>
+                        <td>
+                            <div id="qrBtnDiv">
+                                <button class="qrBtn" id="qrBtn" onclick="showQr();">QR/URL</button>
+                            </div>                        
+                        </td>
+                        <td>
+                            <div id="playerBtnDiv">
+                                <button class="playerBtn" id="playerBtn" onclick="openInNewTab('/index.html');">Player</button>
+                            </div>                        
                         </td>
                     </tr>
                 </tbody>
@@ -45,7 +56,9 @@
         </div>
 
     </div>
-    
+    <div id="qrBox" class="qrBox">
+        <object id="qrObj" class="qrObj" type="text/html" data="/qr/index.html" ></object>
+    </div>     
     <div class="uuid-menu-unselected menu">
         <div id="uuid-menu-unselected-enable" class="menu-item">Enable</div>
         <div id="uuid-menu-unselected-rename" class="menu-item">Rename</div>
