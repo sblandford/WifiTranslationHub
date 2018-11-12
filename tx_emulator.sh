@@ -49,7 +49,7 @@ send_audio () {
     bitrate=${bitrates[quality]}
     
 
-    ffmpeg -re -f lavfi -i "sine=frequency=$freq:sample_rate=16000" -c:a libvo_amrwbenc -b:a $bitrate -f rtp rtp://@228.227.226.$(( 225 + channel )):1234?pkt_size=$PKT_SIZE
+    $FFMPEG -re -f lavfi -i "sine=frequency=$freq:sample_rate=16000" -c:a libvo_amrwbenc -b:a $bitrate -f rtp rtp://@228.227.226.$(( 225 + channel )):1234?pkt_size=$PKT_SIZE
 }
 
 send_uuid () {
@@ -81,6 +81,11 @@ cleanup () {
 function get_num_chans () {
     [ -f $1 ] && grep -E "^[^#]*MAX_CHANNELS" "$1" | grep -oE "[0-9]+[[:space:]]*$"
 }
+
+FFMPEG=ffmpeg
+if [[ -f "/usr/local/bin/ffmpeg-static" ]]; then
+    FFMPEG="/usr/local/bin/ffmpeg-static"
+fi
 
 trap cleanup SIGINT
 
