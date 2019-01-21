@@ -5,6 +5,11 @@ __author__ = "Simon Blandford"
 import logging
 
 LOG_LEVEL = logging.INFO
+LOG_FILE_PLATFORMS = ['Windows']
+LOG_FILE_FILENAME = "wifitranslationhub.log"
+LOG_FILE_MAX_SIZE = 5*1024*1024
+LOG_FILE_ROTATION_COUNT = 2
+LOG_FILE_FORMAT = "%(asctime)s %(levelname)s %(message)s"
 
 THREAD_WAIT = 3.0
 

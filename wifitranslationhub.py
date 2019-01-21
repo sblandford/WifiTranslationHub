@@ -8,7 +8,6 @@ except ImportError:
     import config_dist as config
 import copy
 import json
-import logging
 import pickle
 import os
 import re
@@ -23,6 +22,7 @@ import RTSPServer
 import MulticastRxUniTx
 import ClientUuidRx
 import Webserver
+from Log import log, log_init
 
 # TEST TEST
 #import stacktracer
@@ -39,6 +39,7 @@ channelStatDict = {}
 prevConfigFile = {}
 ended = False
 
+
 def main():
 
     # TEST TEST
@@ -54,7 +55,8 @@ def main():
 
     global configThread
 
-    logging.basicConfig(level=config.LOG_LEVEL)
+    log_init()
+
     origHandler1 = signal.signal(signal.SIGINT, stopAll)
     origHandler2 = signal.signal(signal.SIGABRT, stopAll)
     origHandler3 = signal.signal(signal.SIGSEGV, stopAll)
@@ -62,7 +64,7 @@ def main():
 
     #https://docs.python.org/3.5/library/configparser.html
     appDataFile = appData()
-    logging.info("Using application data file : %s", appDataFile)
+    log().info("Using application data file : %s", appDataFile)
 
     defaultConfig()
     fetchConfig(appDataFile)
@@ -84,7 +86,7 @@ def stopAll(signum, frame):
     global configThread
     global ended
 
-    logging.info("Stopping all processes")
+    log().info("Stopping all processes")
     signal.signal(signal.SIGINT, origHandler1)
     signal.signal(signal.SIGABRT, origHandler2)
     signal.signal(signal.SIGSEGV, origHandler3)
@@ -102,7 +104,7 @@ def stopAll(signum, frame):
     MulticastRxUniTx.waitAll()
     ClientUuidRx.waitAll()
 
-    logging.info("Waiting for config thread")
+    log().info("Waiting for config thread")
     configThread.join()
 
     # TEST TEST
@@ -130,7 +132,7 @@ def appData():
         try:
             os.makedirs(path)
         except:
-            logging.error("Unable to create missing directory for config storage : %s", path)
+            log().error("Unable to create missing directory for config storage : %s", path)
             raise()
     appdata = re.compile("py$").sub("", appdata) + "pickle"
     return appdata
@@ -141,6 +143,14 @@ def fetchConfig (appdata):
     if os.path.exists(appdata):
         with open(appdata, "rb") as f:
             channelDict = pickle.load(f)
+            # Limit number of channels to config
+            chansOrig = channelDict['channels']
+            channelDict['channels'] = {}
+            for i in range(0, config.MAX_CHANNELS):
+                if i in chansOrig:
+                    channelDict['channels'][i] = chansOrig[i]
+                else:
+                    channelDict['channels'][i] = {}
     else:
         defaultConfig()
 
@@ -156,7 +166,7 @@ def defaultConfig():
 def updateConfig(appdata):
     global channelDict
 
-    logging.info("Starting config thread")
+    log().info("Starting config thread")
     prevChannelDict = {}
     while not ended:
         if json.dumps(channelDict) != json.dumps(prevChannelDict):

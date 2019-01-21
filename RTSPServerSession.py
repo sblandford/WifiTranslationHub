@@ -1,5 +1,6 @@
 __author__ = "Simon Blandford"
 
+from Log import log
 import calendar
 try:
     import config
@@ -7,7 +8,6 @@ except ImportError:
     import config_dist as config
 import datetime
 import ipaddress
-import logging
 import random
 import re
 import socket
@@ -39,7 +39,7 @@ class HubServerSession:
         self.thread.start()
 
     def sigStopThread(self):
-        logging.info("Ending RTSP handler thread")
+        log().info("Ending RTSP handler thread")
         self.ended = True
         self.rtspClient.shutdown(socket.SHUT_WR)
 
@@ -57,149 +57,154 @@ class HubServerSession:
         requestProtocol = ''
         while not self.ended:
             try:
-                data = self.rtspClient['connection'].recv(config.MAX_RECV)
-            except socket.timeout:
-                if ((calendar.timegm(time.gmtime()) - lastRxTime) > timeout):
-                    logging.info("RTSP/HTTP session time out")
-                    self.ended = True
-                if 'rtcpRxEvent' in self.rtspClient and self.rtspClient['rtcpRxEvent']:
-                    lastRxTime = calendar.timegm(time.gmtime())
-                    self.rtspClient['rtcpRxEvent'] = False
-                continue
-            if data:
-                lastRxTime = calendar.timegm(time.gmtime())
-                request = data.decode("utf8").replace('\r', '').split('\n')
-                logging.debug("Received: %s", request)
-
-                firstLine = request[0].split(' ')
-                if len(firstLine) == 1:
-                    #requestCommand and requestProtocol remembered from last time
-                    requestPath = firstLine[0]
-                elif len(firstLine) < 3:
-                    logging.warning("Unknown request type")
+                try:
+                    data = self.rtspClient['connection'].recv(config.MAX_RECV)
+                except socket.timeout:
+                    if ((calendar.timegm(time.gmtime()) - lastRxTime) > timeout):
+                        log().info("RTSP/HTTP session time out")
+                        self.ended = True
+                    if 'rtcpRxEvent' in self.rtspClient and self.rtspClient['rtcpRxEvent']:
+                        lastRxTime = calendar.timegm(time.gmtime())
+                        self.rtspClient['rtcpRxEvent'] = False
                     continue
-                else:
-                    requestCommand = firstLine[0]
-                    requestPath = firstLine[1]
-                    requestProtocol = firstLine[2]
-                urlDecoded = urlDecode(requestPath)
-                channel, seq, path, params, mCastIp = urlDecoded
+                if data:
+                    lastRxTime = calendar.timegm(time.gmtime())
+                    request = data.decode("utf8").replace('\r', '').split('\n')
+                    log().debug("Received: %s", request)
 
-                r = ''
-                if not "RTSP" in requestProtocol.upper():
-                    status = "403 Only accepting RTSP protocol"
-                    r = "HTTP/1.0 " + status + "\r\n"
-                    self.ended = True
-                else:
-                    seq = self.seq(request)
+                    firstLine = request[0].split(' ')
+                    if len(firstLine) == 1:
+                        #requestCommand and requestProtocol remembered from last time
+                        requestPath = firstLine[0]
+                    elif len(firstLine) < 3:
+                        log().warning("Unknown request type")
+                        continue
+                    else:
+                        requestCommand = firstLine[0]
+                        requestPath = firstLine[1]
+                        requestProtocol = firstLine[2]
+                    urlDecoded = urlDecode(requestPath)
+                    channel, seq, path, params, mCastIp = urlDecoded
 
-                    if request[0] and seq > 0:
-                        logging.debug("RTSP command %s", requestCommand)
+                    r = ''
+                    if not "RTSP" in requestProtocol.upper():
+                        status = "403 Only accepting RTSP protocol"
+                        r = "HTTP/1.0 " + status + "\r\n"
+                        self.ended = True
+                    else:
+                        seq = self.seq(request)
 
-                        if requestCommand.upper() == "OPTIONS":
-                            r = "RTSP/1.0 200 OK\r\n"
-                            r += "Cseq: " + str(seq) + "\r\n"
-                            r += "Public: DESCRIBE,SETUP,TEARDOWN,PLAY\r\n\r\n"
-                        elif requestCommand.upper() == "DESCRIBE":
+                        if request[0] and seq > 0:
+                            log().debug("RTSP command %s", requestCommand)
 
-                            content = genSdp(True, "0.0.0.0", channel)
+                            if requestCommand.upper() == "OPTIONS":
+                                r = "RTSP/1.0 200 OK\r\n"
+                                r += "Cseq: " + str(seq) + "\r\n"
+                                r += "Public: DESCRIBE,SETUP,TEARDOWN,PLAY\r\n\r\n"
+                            elif requestCommand.upper() == "DESCRIBE":
 
-                            r = "RTSP/1.0 200 OK\r\n"
-                            r += "Cseq: " + str(seq) + "\r\n"
-                            r += "Content-Type: application/sdp\r\n"
-                            r += "Content-Base: " + requestPath + "\r\n"
-                            r += "Content-Length: " + str(len(content)) + "\r\n"
-                            r += "Cache-Control: no-cache\r\n"
-                            r += "\r\n" + content
-                        elif requestCommand.upper() == "SETUP":
-                            regex = re.compile('^Transport:[^=]+=([0-9]+)-([0-9]+)', re.IGNORECASE)
-                            found = False
-                            for l in request:
-                                m = regex.search(l)
-                                if m and m.group(1) and m.group(2):
-                                    found = True
-                                    rxFromPort = int(m.group(1))
-                                    rxToPort = int(m.group(2))
-                                    self.rtspClient['sessionId'] = ''.join(
-                                        random.choice(string.hexdigits).lower() for _ in range(config.SESSION_ID_LENGTH))
-                                    self.rtspClient['clientport'] = rxFromPort
-                                    self.rtspClient['rtpOutSocket'], self.rtspClient['serverport'], self.rtspClient[
-                                        'rtcpInSocket'], self.rtspClient['rtcpInPort'] = MulticastRxUniTx.openTxPorts(
-                                        self.rtspClient)
-                                    self.rtspClient['ssrc'] = ''.join(
-                                        random.choice(string.digits) for _ in range(config.SSRC_LENGTH))
-                                    txFromPort = self.rtspClient['serverport']
-                                    txToPort = txFromPort + rxToPort - rxFromPort
-                                    r = "RTSP/1.0 200 OK\r\n"
-                                    r += "Cseq: " + str(seq) + "\r\n"
-                                    r += "Server: WifiTranslationHub\r\n"
-                                    r += "Date: " + datetime.datetime.utcnow().strftime(
-                                        "%a, %m %b %Y %H:%M:%S GMT") + "\r\n"
-                                    r += "Transport: RTP/AVP/UDP;unicast;client_port="
-                                    r += str(rxFromPort) + "-" + str(rxToPort)
-                                    r += ";server_port="
-                                    r += str(txFromPort) + "-" + str(txToPort)
-                                    r += ";ssrc=" + self.rtspClient["ssrc"] + ";mode=play\r\n"
-                                    r += "Session: " + self.rtspClient["sessionId"] + ";timeout=60\r\n"
-                                    r += "Content-Length: 0\r\n"
-                                    r += "Cache-Control: no-cache\r\n"
-                                    r += "\r\n"
-                            if not found:
-                                r = self.endit("Transport line fields not found");
-                        elif requestCommand.upper() == 'PLAY':
-                            if channel >= 0:
-                                self.rtspClient['channel'] = channel
-                                self.rtspClient['packetRedundancy'] = False
-                                if config.PACKET_REDUNDANCY_FLAG in params:
-                                    self.rtspClient['packetRedundancy'] = (params[config.PACKET_REDUNDANCY_FLAG].lower() == "true")
-                                    logging.debug("Setting packet redundancy enable for sessionId : %s", self.rtspClient["sessionId"])
-                                    logging.debug("Setting packet redundancy enable for sessionId : %s", self.rtspClient["sessionId"])
+                                content = genSdp(True, "0.0.0.0", channel)
+
+                                r = "RTSP/1.0 200 OK\r\n"
+                                r += "Cseq: " + str(seq) + "\r\n"
+                                r += "Content-Type: application/sdp\r\n"
+                                r += "Content-Base: " + requestPath + "\r\n"
+                                r += "Content-Length: " + str(len(content)) + "\r\n"
+                                r += "Cache-Control: no-cache\r\n"
+                                r += "\r\n" + content
+                            elif requestCommand.upper() == "SETUP":
+                                regex = re.compile('^Transport:[^=]+=([0-9]+)-([0-9]+)', re.IGNORECASE)
+                                found = False
+                                for l in request:
+                                    m = regex.search(l)
+                                    if m and m.group(1) and m.group(2):
+                                        found = True
+                                        rxFromPort = int(m.group(1))
+                                        rxToPort = int(m.group(2))
+                                        self.rtspClient['sessionId'] = ''.join(
+                                            random.choice(string.hexdigits).lower() for _ in range(config.SESSION_ID_LENGTH))
+                                        self.rtspClient['clientport'] = rxFromPort
+                                        self.rtspClient['rtpOutSocket'], self.rtspClient['serverport'], self.rtspClient[
+                                            'rtcpInSocket'], self.rtspClient['rtcpInPort'] = MulticastRxUniTx.openTxPorts(
+                                            self.rtspClient)
+                                        self.rtspClient['ssrc'] = ''.join(
+                                            random.choice(string.digits) for _ in range(config.SSRC_LENGTH))
+                                        txFromPort = self.rtspClient['serverport']
+                                        txToPort = txFromPort + rxToPort - rxFromPort
+                                        r = "RTSP/1.0 200 OK\r\n"
+                                        r += "Cseq: " + str(seq) + "\r\n"
+                                        r += "Server: WifiTranslationHub\r\n"
+                                        r += "Date: " + datetime.datetime.utcnow().strftime(
+                                            "%a, %m %b %Y %H:%M:%S GMT") + "\r\n"
+                                        r += "Transport: RTP/AVP/UDP;unicast;client_port="
+                                        r += str(rxFromPort) + "-" + str(rxToPort)
+                                        r += ";server_port="
+                                        r += str(txFromPort) + "-" + str(txToPort)
+                                        r += ";ssrc=" + self.rtspClient["ssrc"] + ";mode=play\r\n"
+                                        r += "Session: " + self.rtspClient["sessionId"] + ";timeout=60\r\n"
+                                        r += "Content-Length: 0\r\n"
+                                        r += "Cache-Control: no-cache\r\n"
+                                        r += "\r\n"
+                                if not found:
+                                    r = self.endit("Transport line fields not found");
+                            elif requestCommand.upper() == 'PLAY':
+                                if channel >= 0:
+                                    self.rtspClient['channel'] = channel
+                                    self.rtspClient['packetRedundancy'] = False
+                                    if config.PACKET_REDUNDANCY_FLAG in params:
+                                        self.rtspClient['packetRedundancy'] = (params[config.PACKET_REDUNDANCY_FLAG].lower() == "true")
+                                        log().debug("Setting packet redundancy enable for sessionId : %s", self.rtspClient["sessionId"])
+                                        log().debug("Setting packet redundancy enable for sessionId : %s", self.rtspClient["sessionId"])
+                                    if self.session(request) == self.rtspClient['sessionId']:
+                                        MulticastRxUniTx.addRtspClient(self.rtspClient)
+                                        r = "RTSP/1.0 200 OK\r\n"
+                                        r += "Cseq: " + str(seq) + "\r\n"
+                                        r += "Server: WifiTranslationHub\r\n"
+                                        r += "Date: " + datetime.datetime.utcnow().strftime(
+                                            "%a, %m %b %Y %H:%M:%S GMT") + "\r\n"
+                                        r += "RTP-Info: requestPath=" + requestPath + ";seq=" + str(
+                                            MulticastRxUniTx.getSeq(self.rtspClient["channel"]))
+                                        r += ";rtptime=" + str(MulticastRxUniTx.getTimeStamp(self.rtspClient["channel"])) + "\r\n"
+                                        r += "Range: npt=5.209428-\r\n"
+                                        r += "Session: " + self.rtspClient["sessionId"] + ";timeout=60\r\n"
+                                        r += "Content-Length: 0\r\n"
+                                        r += "Cache-Control: no-cache\r\n"
+                                        r += '\r\n'
+                                    else:
+                                        r = self.endit(
+                                            "session id " + self.session(request) + " does not match expected : " +
+                                            self.rtspClient['sessionId'])
+                                else:
+                                    r = self.endit("Channel number not found in RequestPath")
+
+                            elif requestCommand.upper() == "TEARDOWN":
                                 if self.session(request) == self.rtspClient['sessionId']:
-                                    MulticastRxUniTx.addRtspClient(self.rtspClient)
-                                    r = "RTSP/1.0 200 OK\r\n"
-                                    r += "Cseq: " + str(seq) + "\r\n"
-                                    r += "Server: WifiTranslationHub\r\n"
-                                    r += "Date: " + datetime.datetime.utcnow().strftime(
-                                        "%a, %m %b %Y %H:%M:%S GMT") + "\r\n"
-                                    r += "RTP-Info: requestPath=" + requestPath + ";seq=" + str(
-                                        MulticastRxUniTx.getSeq(self.rtspClient["channel"]))
-                                    r += ";rtptime=" + str(MulticastRxUniTx.getTimeStamp(self.rtspClient["channel"])) + "\r\n"
-                                    r += "Range: npt=5.209428-\r\n"
-                                    r += "Session: " + self.rtspClient["sessionId"] + ";timeout=60\r\n"
-                                    r += "Content-Length: 0\r\n"
-                                    r += "Cache-Control: no-cache\r\n"
+                                    MulticastRxUniTx.removeRtspClient(self.rtspClient['sessionId'])
+                                    r = 'RTSP/1.0 200 OK\r\n'
+                                    r += 'Cseq: ' + str(seq) + '\r\n'
                                     r += '\r\n'
                                 else:
                                     r = self.endit(
-                                        "session id " + self.session(request) + " does not match expected : " +
-                                        self.rtspClient['sessionId'])
+                                        "session id " + self.session(request) + " does not match expected : " + self.rtspClient[
+                                            'sessionId'])
                             else:
-                                r = self.endit("Channel number not found in RequestPath")
-
-                        elif requestCommand.upper() == "TEARDOWN":
-                            if self.session(request) == self.rtspClient['sessionId']:
-                                MulticastRxUniTx.removeRtspClient(self.rtspClient['sessionId'])
-                                r = 'RTSP/1.0 200 OK\r\n'
-                                r += 'Cseq: ' + str(seq) + '\r\n'
-                                r += '\r\n'
-                            else:
-                                r = self.endit(
-                                    "session id " + self.session(request) + " does not match expected : " + self.rtspClient[
-                                        'sessionId'])
+                                r = self.endit("Unhandled command")
                         else:
-                            r = self.endit("Unhandled command")
-                    else:
-                        r = self.endit("Not sequence number found")
+                            r = self.endit("Not sequence number found")
 
-                if len(r) > 0:
-                    count = self.rtspClient['connection'].send(str.encode(r))
-                    logging.debug('Sending %d bytes :', count)
-                    logging.debug(r)
-            else:
-                break
+                    if len(r) > 0:
+                        count = self.rtspClient['connection'].send(str.encode(r))
+                        log().debug('Sending %d bytes :', count)
+                        log().debug(r)
+                else:
+                    break
+            except Exception as e:
+                log().error(e.__doc__)
+                log().error(e.message)
+                time.sleep(1)
         # At end of thread stop the client
         if 'sessionId' in self.rtspClient:
-            logging.info("Ending session %s", self.rtspClient['sessionId'])
+            log().info("Ending session %s", self.rtspClient['sessionId'])
             MulticastRxUniTx.removeRtspClient(self.rtspClient['sessionId'])
 
     def seq(self, request):
@@ -224,7 +229,7 @@ class HubServerSession:
 
     def endit(self, message):
         self.ended = True
-        logging.error(message)
+        log().error(message)
         return 'RTSP/1.0 400 BAD REQUEST\r\n\r\n'
 
 

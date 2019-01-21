@@ -881,24 +881,6 @@ window.onclick = function(event) {
   }
 }
 
-function showQr() {
-    var boxDiv = document.getElementById("qrBox");
-    var boxObj = document.getElementById("qrObj");
-    var boxWidth = boxDiv.offsetWidth;
-    var boxHeight = boxDiv.offsetHeight;
-    
-    boxObj.width = document.documentElement.clientWidth;
-    boxObj.height = document.documentElement.clientHeight * 0.6;
-    
-    if (boxWidth < 400) {
-        scale = boxWidth / 400;
-        boxObj.style.transform = "scale(" + scale + ")";
-    } else {
-        boxObj.style.transform = "scale(1)";
-    }
-    boxDiv.classList.toggle("qrShow");
-}
-
 //Fetch coordinates if we have permission and we need to
 function pollGeo () {
 

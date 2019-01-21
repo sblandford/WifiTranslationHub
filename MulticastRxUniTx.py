@@ -1,12 +1,12 @@
 __author__ = "Simon Blandford"
 
+from Log import log
 import calendar
 try:
     import config
 except ImportError:
     import config_dist as config
 import ipaddress
-import logging
 import select
 import socket
 import struct
@@ -30,18 +30,18 @@ def addRtspClient(clientInfo):
     global privChannelDict
     # Add client
     if not 'sessionId' in clientInfo:
-        logging.error("Attempt to add client with no sessionId")
+        log().error("Attempt to add client with no sessionId")
         return
     sessionId = clientInfo['sessionId']
     channel = clientInfo['channel']
     if channel >= config.MAX_CHANNELS:
-        logging.error("Attempt to request channel %d above max channel %d", channel, config.MAX_CHANNELS)
+        log().error("Attempt to request channel %d above max channel %d", channel, config.MAX_CHANNELS)
         return
     with privChannelDict['channels'][channel]['lock']:
         clientDictionary[sessionId] = clientInfo
         # Assign client to channel list
         channelDict['channels'][channel]['rtspSessions'].append(sessionId)
-    logging.debug("Added RTSP client with sessionId : %s", sessionId)
+    log().debug("Added RTSP client with sessionId : %s", sessionId)
 
 def removeRtspClient(sessionId):
     global channelDict
@@ -61,11 +61,11 @@ def removeRtspClient(sessionId):
             del clientDictionary[sessionId]
         with privChannelDict['channels'][channel]['lock']:
              channelDict['channels'][channel]['rtspSessions'].remove(sessionId)
-        logging.debug("Removed RTSP client with sessionId : %s", sessionId)
+        log().debug("Removed RTSP client with sessionId : %s", sessionId)
 
 def removeAllClients(channel):
     global channelDict
-    logging.debug("Removing all RTSP clients of channel : %d", channel)
+    log().debug("Removing all RTSP clients of channel : %d", channel)
     with privChannelDict['channels'][channel]['lock']:
         rtspSessions = list(channelDict['channels'][channel]['rtspSessions'])
         httpLanSessions = list(channelDict['channels'][channel]['httpLanSessions'])
@@ -83,12 +83,12 @@ def addHttpClientIfNot(clientInfo, onLan):
     global lock
     # Add client
     if not 'uuid' in clientInfo:
-        logging.error("Attempt to add client with no uuid")
+        log().error("Attempt to add client with no uuid")
         return
     uuid = clientInfo['uuid']
     channel = clientInfo['channel']
     if channel >= config.MAX_CHANNELS:
-        logging.error("Attempt to request channel %d above max channel %d", channel, config.MAX_CHANNELS)
+        log().error("Attempt to request channel %d above max channel %d", channel, config.MAX_CHANNELS)
         return
     #Do nothing if already registered unless a channel change
     channelChanged = False
@@ -99,7 +99,7 @@ def addHttpClientIfNot(clientInfo, onLan):
             if not uuid in channelDict['channels'][channel]['httpLanSessions'] and not uuid in channelDict['channels'][channel]['httpWanSessions']:
                 channelChanged = True
     if channelChanged:
-        logging.debug("Detected channel change for uuid : %s", uuid)
+        log().debug("Detected channel change for uuid : %s", uuid)
         removeHttpClient(uuid)
     elif foundUuid:
         return
@@ -114,7 +114,7 @@ def addHttpClientIfNot(clientInfo, onLan):
         else:
             channelDict['channels'][channel]['httpWanSessions'].append(uuid)
     clientDictionary[uuid]['thread'].start()
-    logging.debug("Added HTTP client with UUID : %s", uuid)
+    log().debug("Added HTTP client with UUID : %s", uuid)
 
 def removeHttpClient(uuid):
     global channelDict
@@ -134,7 +134,7 @@ def removeHttpClient(uuid):
                 channelDict['channels'][channel]['httpLanSessions'].remove(uuid)
             if uuid in channelDict['channels'][channel]['httpWanSessions']:
                 channelDict['channels'][channel]['httpWanSessions'].remove(uuid)
-        logging.debug("Removed HTTP client with sessionId : %s", uuid)
+        log().debug("Removed HTTP client with sessionId : %s", uuid)
 
 def clientInfoFromUuid(uuid):
     global clientDictionary
@@ -162,7 +162,7 @@ def timeHttpClient(uuid):
         if not clientInfo:
             break
     if clientInfo:
-        logging.info("Timed out HTTP client uuid: %s", uuid)
+        log().info("Timed out HTTP client uuid: %s", uuid)
         removeHttpClient(uuid)
 
 #Wait for RTP packet and return it
@@ -173,20 +173,20 @@ def getHttpRtpPacketSeq(channel, seq):
     #Quick check to see if in cache
     #with privChannelDict['channels'][channel]['lock']:
     if seq in packetCache:
-        logging.debug("Cache hit on packet seq : %d", seq)
+        log().debug("Cache hit on packet seq : %d", seq)
         return packetCache[seq]
     
     #Can't return old packet
     if seq < getSeq(channel):
-        logging.debug("Request for old HTTP RTP packet %d when %d is available", seq, getSeq(channel))
+        log().debug("Request for old HTTP RTP packet %d when %d is available", seq, getSeq(channel))
         return False
     #Future limited to prevent waiting forever
     if seq > getSeq(channel) + config.HTTP_MAX_SEQ_AHEAD:
-        logging.debug("Request for HTTP RTP packet %d too far in future when %d is possible", seq, (getSeq(channel) + config.HTTP_MAX_SEQ_AHEAD))
+        log().debug("Request for HTTP RTP packet %d too far in future when %d is possible", seq, (getSeq(channel) + config.HTTP_MAX_SEQ_AHEAD))
         return False
     #Wait until requested seq arrives
     if not 'newPacketLock' in privChannelDict['channels'][channel]:
-        logging.debug("Expected packetlock for HTTP RTP packet not found")
+        log().debug("Expected packetlock for HTTP RTP packet not found")
         return False
     while seq > getSeq(channel):
         with privChannelDict['channels'][channel]['newPacketLock']:
@@ -198,9 +198,9 @@ def getHttpRtpPacketSeq(channel, seq):
     if seq != getSeq(channel):
         #See if it has appeared in cache before giving up
         if seq in packetCache:
-            logging.debug("Cache hit on packet seq : %d", seq)
+            log().debug("Cache hit on packet seq : %d", seq)
             return packetCache[seq]        
-        logging.debug("Packet %d expired waiting when %d is now available", seq, getSeq(channel))
+        log().debug("Packet %d expired waiting when %d is now available", seq, getSeq(channel))
         return False
     #We have our packet
     with privChannelDict['channels'][channel]['rtpLock']:
@@ -219,7 +219,7 @@ def runChannel(channel):
     global privChannelDict
 
 
-    logging.debug("Starting channel : %d", channel)
+    log().debug("Starting channel : %d", channel)
     channelDict['channels'][channel]['valid'] = False
     channelDict['channels'][channel]['rtspSessions'] = []
     channelDict['channels'][channel]['httpLanSessions'] = []
@@ -237,12 +237,12 @@ def runChannel(channel):
 
 def stopChannel(channel):
     global privChannelDict
-    logging.info("Stopping channel %d", channel)
+    log().info("Stopping channel %d", channel)
     removeAllClients(channel)
     privChannelDict['channels'][channel]['ended'] = True
 
 def waitChannel(channel):
-    logging.debug("Waiting for channel %d", channel)
+    log().debug("Waiting for channel %d", channel)
     threads[channel].join(config.THREAD_WAIT)
 
 def startAll(channelDictIn, channelStatDictIn):
@@ -255,7 +255,7 @@ def startAll(channelDictIn, channelStatDictIn):
     channelStatDict = channelStatDictIn
     BackEnd.importLocks(lock, privChannelDict)
     BackEnd.setupUuid(channelDict, channelStatDict)
-    logging.info("Starting all channel threads")
+    log().info("Starting all channel threads")
     for i in range(0, config.MAX_CHANNELS):
         runChannel(i)
     #Re-call since now privChannelDict is set to something useful
@@ -265,12 +265,12 @@ def startAll(channelDictIn, channelStatDictIn):
     thread.start()
         
 def stopAll():
-    logging.info("Stopping all channel threads")
+    log().info("Stopping all channel threads")
     for channel, thread in threads.items():
         stopChannel(channel)
 
 def waitAll():
-    logging.info("Waiting for all channel threads")
+    log().info("Waiting for all channel threads")
     for channel, thread in threads.items():
         waitChannel(channel)
 
@@ -291,7 +291,7 @@ def getTimeStamp(channel):
             return 0
 
 def openTxPorts(clientInfo):
-    logging.info("Esablishing RTSP/RTCP socket for client : %s", clientInfo['sessionId'])
+    log().info("Esablishing RTSP/RTCP socket for client : %s", clientInfo['sessionId'])
     while True:
         # Find an even numbered ethermal port
         sock0 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
@@ -339,13 +339,13 @@ def reflectRTP(channel):
     global seq
     global timeStamp
 
-    logging.debug("Started Channel %d thread", channel)
+    log().debug("Started Channel %d thread", channel)
     seqPrev = 0
     # Create the datagram socket for receiving channel
     ip_address = ipaddress.ip_address(config.MULTICAST_BASE_ADDR) + channel + config.MUTLICAST_MANAGEMENT_OFFSET
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    sock.bind((str(ip_address), config.MULTICAST_PORT))
+    sock.bind(("", config.MULTICAST_PORT))
     group = socket.inet_aton(str(ip_address))
     mreq = struct.pack("4sL", group, socket.INADDR_ANY)
     # TODO Trap network error here
@@ -355,84 +355,89 @@ def reflectRTP(channel):
             sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
         except:
             if not reported:
-                logging.error("IpBroadcast : %s", sys.exc_info()[0])
+                log().error("IpBroadcast : %s", sys.exc_info()[0])
             reported = True
             time.sleep(config.SOCKET_RETRY_SECONDS)
             pass
         else:
             break
     sock.settimeout(config.SOCKET_TIMEOUT)
-    logging.debug("Waiting for multicast packets on channel %d, address %s", channel, str(ip_address))
+    log().debug("Waiting for multicast packets on channel %d, address %s", channel, str(ip_address))
     while not privChannelDict['channels'][channel]['ended']:
-        timeout = False
         try:
-            data, address = sock.recvfrom(config.MULTICAST_PACKET_BUFFER_SIZE)
-        except socket.timeout:
-            timeout = True
-        if timeout:
-            logging.debug("Timeout on channel %s", channel)
-            with privChannelDict['channels'][channel]['lock']:
-                channelDict['channels'][channel]['valid'] = False
-                channelDict['channels'][channel]['busy'] = False
+            timeout = False
+            try:
+                data, address = sock.recvfrom(config.MULTICAST_PACKET_BUFFER_SIZE)
+            except socket.timeout:
+                timeout = True
+            if timeout:
+                log().debug("Timeout on channel %s", channel)
+                with privChannelDict['channels'][channel]['lock']:
+                    channelDict['channels'][channel]['valid'] = False
+                    channelDict['channels'][channel]['busy'] = False
+                with privChannelDict['channels'][channel]['newPacketLock']:
+                    privChannelDict['channels'][channel]['newPacketLock'].notify_all()
+                continue
+            else:
+                with privChannelDict['channels'][channel]['rtpLock']:
+                    channelDict['channels'][channel]['busy'] = True
+                    privChannelDict['channels'][channel]['rtpPacket'] = data
+            if not amrPacket(data):
+                log().debug("received %d bytes of invalid data on channel %d from %s", len(data), channel, address)
+                with privChannelDict['channels'][channel]['lock']:
+                    channelDict['channels'][channel]['valid'] = False
+                continue
+            seq = (data[2] << 8) + data[3]
+            timeStamp = (data[4] << 24) + (data[5] << 16) + (data[6] << 8) + data[7]
+
+            if seq != (seqPrev + 1) and seq != 0 and seqPrev != 0xFFFF:
+                log().info("Missed packet from seq %d to %d on channel %s", seqPrev, seq, channel)
+
+            if seq > seqPrev:
+                with privChannelDict['channels'][channel]['lock']:
+                    privChannelDict['channels'][channel]['seq'] = seq
+                    privChannelDict['channels'][channel]['timeStamp'] = timeStamp
+                    privChannelDict['channels'][channel]['rtpPacket'] = data
+                    if not seq in packetCache:
+                        packetCache[seq] = data
+                        for cacheSeq in list(packetCache.keys()):
+                            if cacheSeq < (seq - config.CACHE_NUMBER_OF_PACKETS):
+                                del packetCache[cacheSeq]
+                    channelDict['channels'][channel]['kbps'] = amrKbps(data)
+                    channelDict['channels'][channel]['valid'] = True
+            log().debug("received %d bytes on channel %d from %s with seq %d and timestamp %d", len(data), channel,
+                          address, seq, timeStamp)
             with privChannelDict['channels'][channel]['newPacketLock']:
                 privChannelDict['channels'][channel]['newPacketLock'].notify_all()
-            continue
-        else:
-            with privChannelDict['channels'][channel]['rtpLock']:
-                channelDict['channels'][channel]['busy'] = True
-                privChannelDict['channels'][channel]['rtpPacket'] = data
-        if not amrPacket(data):
-            logging.debug("received %d bytes of invalid data on channel %d from %s", len(data), channel, address)
+
+            #Process RTP client
             with privChannelDict['channels'][channel]['lock']:
-                channelDict['channels'][channel]['valid'] = False
-            continue
-        seq = (data[2] << 8) + data[3]
-        timeStamp = (data[4] << 24) + (data[5] << 16) + (data[6] << 8) + data[7]
-
-        if seq != (seqPrev + 1) and seq != 0 and seqPrev != 0xFFFF:
-            logging.info("Missed packet from seq %d to %d on channel %s", seqPrev, seq, channel)
-
-        if seq > seqPrev:
-            with privChannelDict['channels'][channel]['lock']:
-                privChannelDict['channels'][channel]['seq'] = seq
-                privChannelDict['channels'][channel]['timeStamp'] = timeStamp
-                privChannelDict['channels'][channel]['rtpPacket'] = data
-                if not seq in packetCache:
-                    packetCache[seq] = data
-                    for cacheSeq in list(packetCache.keys()):
-                        if cacheSeq < (seq - config.CACHE_NUMBER_OF_PACKETS):
-                            del packetCache[cacheSeq]
-                channelDict['channels'][channel]['kbps'] = amrKbps(data)
-                channelDict['channels'][channel]['valid'] = True
-        logging.debug("received %d bytes on channel %d from %s with seq %d and timestamp %d", len(data), channel,
-                      address, seq, timeStamp)
-        with privChannelDict['channels'][channel]['newPacketLock']:
-            privChannelDict['channels'][channel]['newPacketLock'].notify_all()
-
-        #Process RTP client
-        with privChannelDict['channels'][channel]['lock']:
-            rtspSessions = list(channelDict['channels'][channel]['rtspSessions'])
-        for sessionId in rtspSessions:
-            with lock:
-                clientInfo = clientDictionary[sessionId]
-            if clientInfo:
-                if not clientInfo['packetRedundancy'] and seq <= seqPrev:
-                    continue
-                if not 'rtpOutSocket' in clientInfo or not 'rtcpInSocket' in clientInfo:
-                    logging.error("Sockets not set up for client (removing) : %s", clientInfo['sessionId'])
-                    removeRtspClient(clientInfo['sessionId'])
-                    continue
-                clientInfo['rtpOutSocket'].sendto(data, (clientInfo['IP'], clientInfo['clientport']))
-                logging.debug('Send %d bytes to %s on IP %s port %d', len(data), clientInfo['sessionId'],
-                              clientInfo['IP'], clientInfo['clientport'])
-                rtcpReady = select.select([clientInfo['rtcpInSocket']], [], [], 0)
-                if rtcpReady[0]:
-                    logging.debug("Reading RTCP packet on port : %d", clientInfo['rtcpInPort'])
-                    rtcpData = clientInfo['rtcpInSocket'].recv(config.HUB_PACKET_BUFFER_SIZE)
-                    if len(rtcpData):
-                        clientInfo['rtcpRxEvent'] = True
-                        logging.info("RTCP received message : %s", str(rtcpData))
-        seqPrev = seq
+                rtspSessions = list(channelDict['channels'][channel]['rtspSessions'])
+            for sessionId in rtspSessions:
+                with lock:
+                    clientInfo = clientDictionary[sessionId]
+                if clientInfo:
+                    if not clientInfo['packetRedundancy'] and seq <= seqPrev:
+                        continue
+                    if not 'rtpOutSocket' in clientInfo or not 'rtcpInSocket' in clientInfo:
+                        log().error("Sockets not set up for client (removing) : %s", clientInfo['sessionId'])
+                        removeRtspClient(clientInfo['sessionId'])
+                        continue
+                    clientInfo['rtpOutSocket'].sendto(data, (clientInfo['IP'], clientInfo['clientport']))
+                    log().debug('Send %d bytes to %s on IP %s port %d', len(data), clientInfo['sessionId'],
+                                  clientInfo['IP'], clientInfo['clientport'])
+                    rtcpReady = select.select([clientInfo['rtcpInSocket']], [], [], 0)
+                    if rtcpReady[0]:
+                        log().debug("Reading RTCP packet on port : %d", clientInfo['rtcpInPort'])
+                        rtcpData = clientInfo['rtcpInSocket'].recv(config.HUB_PACKET_BUFFER_SIZE)
+                        if len(rtcpData):
+                            clientInfo['rtcpRxEvent'] = True
+                            log().info("RTCP received message : %s", str(rtcpData))
+            seqPrev = seq
+        except Exception as e:
+            log().error(e.__doc__)
+            log().error(e.message)
+            time.sleep(1)
     sock.close()
 
 def shortStatWorker():
@@ -443,19 +448,23 @@ def shortStatWorker():
     if not 'channelStatLock' in channelStatDict:
         channelStatDict['channelStatLock'] = threading.Lock()
     while not ended:
-        with channelStatDict['channelStatLock']:
-            for i in range(0, config.MAX_CHANNELS):
-                if not i in channelStatDict:
-                    channelStatDict[i] = {}
-                with privChannelDict['channels'][i]['lock']:
+        try:
+            with channelStatDict['channelStatLock']:
+                for i in range(0, config.MAX_CHANNELS):
                     if not i in channelStatDict:
                         channelStatDict[i] = {}
-                    if 'allowedIds' in channelDict['channels'][i]:
-                        channelStatDict[i]['allowedIds'] = channelDict['channels'][i]['allowedIds']
-                    if 'busy' in channelDict['channels'][i]:
-                        channelStatDict[i]['busy'] = channelDict['channels'][i]['busy']
-                    if 'valid' in channelDict['channels'][i]:
-                        channelStatDict[i]['valid'] = channelDict['channels'][i]['valid']
-                    if 'name' in channelDict['channels'][i]:
-                        channelStatDict[i]['name'] = channelDict['channels'][i]['name']
+                    with privChannelDict['channels'][i]['lock']:
+                        if not i in channelStatDict:
+                            channelStatDict[i] = {}
+                        if 'allowedIds' in channelDict['channels'][i]:
+                            channelStatDict[i]['allowedIds'] = channelDict['channels'][i]['allowedIds']
+                        if 'busy' in channelDict['channels'][i]:
+                            channelStatDict[i]['busy'] = channelDict['channels'][i]['busy']
+                        if 'valid' in channelDict['channels'][i]:
+                            channelStatDict[i]['valid'] = channelDict['channels'][i]['valid']
+                        if 'name' in channelDict['channels'][i]:
+                            channelStatDict[i]['name'] = channelDict['channels'][i]['name']
+        except Exception as e:
+            log().error(e.__doc__)
+            log().error(e.message)
         time.sleep(1)
