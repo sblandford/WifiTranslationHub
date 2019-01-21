@@ -175,7 +175,7 @@ function watchDog () {
     if (!gWatchDogTmr) {
         gWatchDogTmr = setInterval(function () {
             if (!gWatchDogOK) {
-                StopPlayer();
+                stopPlayer();
                 updateDisplay();
             }
             gWatchDogOK = false;
