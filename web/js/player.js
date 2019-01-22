@@ -24,6 +24,7 @@ var gMaxSeqOops = 10;
 var gSeqUpdateTime = 60000;
 var gSeqStatCount = 10;
 var gWatchDogOK = true;
+var gWatchDogBusy = false;
 
 //Audio parameters
 var gDecodeLoop = null;
@@ -32,12 +33,14 @@ var gstartDecodeTimeStamp = null;
 var gDecodeTime = null;
 
 //Starting buffer time, can increase as required
-var gFutureTime = 0.05;
+var gFutureTime = 0.15;
 var gAudioBufferTime = 0.3;
 var gFutureIncrement = 0.01;
 var gMaxChannels = 10;
 var gAppUrl = "https://play.google.com/store/apps/details?id=eu.bkwsu.webcast.wifitranslation";
-var gJsonpTimeout = 500;
+var gJsonpTimeout = 1000;
+var gDecreaseCount = 0;
+var gDecreaseHoldoff = 2;
 
 var gPrevChannel = 0;
 var gPlaying = false;
@@ -70,6 +73,7 @@ var gPlayIntention = false;
 var gPlayerHope = false;
 var gEnacting = false;
 
+var dAudio;
 
 function mobileAndTabletcheck () {
     var check = false;
@@ -160,6 +164,7 @@ function pollStatus () {
         updateDisplay();
     }
     if (!gPlayIntention && gPlaying && !gEnacting) {
+        console.log("Stopping to intended state");
         stopPlayer();
         updateDisplay();
     }
@@ -174,11 +179,16 @@ function checkStreamOK () {
 function watchDog () {
     if (!gWatchDogTmr) {
         gWatchDogTmr = setInterval(function () {
-            if (!gWatchDogOK) {
+            if (!gWatchDogOK && !gWatchDogBusy) {
+                gWatchDogBusy = true;
+                console.log("Watchdog timeout");
                 stopPlayer();
                 updateDisplay();
+                gWatchDogOK = true;
+                gWatchDogBusy = false;
+            } else {
+                gWatchDogOK = false;
             }
-            gWatchDogOK = false;
         }, gWatchDogInterval);
     }
 }
@@ -280,6 +290,7 @@ function getNextSeq () {
             }
         },
         function () {
+            console.log("Stop at getNextSeq timeout"); // Fails here TEST TEST
             stopPlayer();
         }
     );
@@ -424,14 +435,18 @@ function playBuffer(seq) {
             } else {           
                     //Decrease lag if safe to do so
                     if (!futureFail && ((gSeq - seq) > 1)) {
-                        console.log("Decreasing buffer length by 1");
-                        if (seqOK) {
-                            console.log("Filling in for missing packet : " + (seq + 1) + " with " + seq);
-                            pokePktTimeCode(gPkts[seq], 1);
-                            playRtpPacket(gPkts[seq]);
+                        if (gDecreaseCount++ > gDecreaseHoldoff) {
+                            console.log("Decreasing buffer length by 1");
+                            if (seqOK) {
+                                console.log("Filling in for missing packet : " + (seq + 1) + " with " + seq);
+                                pokePktTimeCode(gPkts[seq], 1);
+                                playRtpPacket(gPkts[seq]);
+                            }
+                            seq = (seq + 1) & 0xFFFF;
+                            reSync = true;
                         }
-                        seq = (seq + 1) & 0xFFFF;
-                        reSync = true;
+                    } else {
+                        gDecreaseCount = 0;
                     }
                 }
                 currentFail = false;
@@ -703,6 +718,7 @@ function onclickChannel(channel) {
         localStorage.channel = channel;
         updateDisplay();
         if (gPlaying) {
+            console.log("Stop on channel change");
             stopPlayer();
             startPlayer(localStorage.channel);
         }
@@ -718,13 +734,28 @@ function ontouchendChannel(channel) {
     }
 }
 
+// The main start/stop button handler
 function clickEnact() {
+    dAudio = document.getElementById('dummyAudio');
     if (gPlayIntention) {
         gPlayIntention = false;
+        console.log("Stop on clickEnact");
         stopPlayer();
+        dAudio.onpause = null;
+        dAudio.pause();
+        dAudio.onplay = function () {
+            gPlayIntention = false;
+            clickEnact();
+        };
     } else {
         gPlayIntention = true;
-        startPlayer();
+        dAudio.onplay = null;
+        dAudio.play();
+        dAudio.onpause = function () {
+            gPlayIntention = true;
+            clickEnact();
+        };        
+        startPlayer();        
     }
     updateDisplay();    
 }
@@ -768,6 +799,7 @@ function buttonStatus () {
 function startPlayer() {
     gEnacting = true;
     //Kill any existing players
+    console.log("Stop any existing");
     stopPlayer();
     console.log("Starting player");
     //Do we need to get position
@@ -816,6 +848,7 @@ function fullStopPlayer () {
         clearInterval(gPlayTimeout);
         gPlayTimeout = null;
     }
+    console.log("Full stop");
     stopPlayer();
 }
 
@@ -879,6 +912,24 @@ window.onclick = function(event) {
         boxDiv.classList.remove("qrShow");
     }
   }
+}
+
+function showQr() {
+    var boxDiv = document.getElementById("qrBox");
+    var boxObj = document.getElementById("qrObj");
+    var boxWidth = boxDiv.offsetWidth;
+    var boxHeight = boxDiv.offsetHeight;
+    
+    boxObj.width = document.documentElement.clientWidth;
+    boxObj.height = document.documentElement.clientHeight * 0.6;
+    
+    if (boxWidth < 400) {
+        scale = boxWidth / 400;
+        boxObj.style.transform = "scale(" + scale + ")";
+    } else {
+        boxObj.style.transform = "scale(1)";
+    }
+    boxDiv.classList.toggle("qrShow");
 }
 
 //Fetch coordinates if we have permission and we need to
