@@ -33,7 +33,7 @@ var gstartDecodeTimeStamp = null;
 var gDecodeTime = null;
 
 //Starting buffer time, can increase as required
-var gFutureTime = 0.15;
+var gFutureTime = 0.10;
 var gAudioBufferTime = 0.3;
 var gFutureIncrement = 0.01;
 var gMaxChannels = 10;
@@ -666,7 +666,7 @@ gAmrwbWorker.onmessage = function (e) {
         gDecodeTime = ((new Date).getTime() - gstartDecodeTimeStamp) / 1000.0;
         
         if (gDecodeTime > (gFutureTime / 2)) {
-            console.log("Increasing audio DSP time allocation from " + gFutureTime + " to " + (gFutureTime + gFutureIncrement));
+            console.log("Increasing audio DSP time seconds allocation from " + gFutureTime + " to " + (gFutureTime + gFutureIncrement + " after overshoot of of " + (gDecodeTime - (gFutureTime / 2))));
             gFutureTime += gFutureIncrement;
         }
     }
