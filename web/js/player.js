@@ -290,7 +290,7 @@ function getNextSeq () {
             }
         },
         function () {
-            console.log("Stop at getNextSeq timeout"); // Fails here TEST TEST
+            console.log("Stop at getNextSeq timeout");
             stopPlayer();
         }
     );
