@@ -31,16 +31,22 @@ var gDecodeLoop = null;
 var gAudioPacketBufferTime = 200;
 var gstartDecodeTimeStamp = null;
 var gDecodeTime = null;
+var gDecodeTimeAv = null;
+var gDecodeTimeAvN = 50;
 
 //Starting buffer time, can increase as required
 var gFutureTime = 0.10;
+var gFutureTimeMin = 0.05;
 var gAudioBufferTime = 0.3;
-var gFutureIncrement = 0.01;
+var gFutureChangeThreshold = 0.2;
+var gFutureMargin = 3;
+var gFutureHoldoff = 10;
+var gFutureHoldoffCount = 0;
 var gMaxChannels = 10;
 var gAppUrl = "https://play.google.com/store/apps/details?id=eu.bkwsu.webcast.wifitranslation";
 var gJsonpTimeout = 1000;
 var gDecreaseCount = 0;
-var gDecreaseHoldoff = 2;
+var gDecreaseHoldoff = 10;
 
 var gPrevChannel = 0;
 var gPlaying = false;
@@ -279,6 +285,7 @@ function getNextSeq () {
                 var seq = (thisSeq["seq"] + 1) & 0xFFFF;
                 console.log("Next Seq available : " + seq);
                 if (gSeq == -1) {
+                    watchDog();
                     testPacket (seq);
                 }
                 //Panic if wildly wrong
@@ -424,7 +431,7 @@ function playBuffer(seq) {
             if (statCounter++ > gSeqStatCount) {
                 statCounter = 0;
 
-                console.log ((seqPrevOk | 0) + " " + (seqOK | 0) + " " + (seqNextOk| 0) + " " + (seqFutureOk| 0) + ", Seq : " + seq + ", Available : " + gSeqArrived );
+                console.log ((seqPrevOk | 0) + " " + (seqOK | 0) + " " + (seqNextOk| 0) + " " + (seqFutureOk| 0) + ", Seq : " + seq + ", Available : " + gSeqArrived + ", DSP time allowance : " + gFutureTime );
 
                 
                 //Increase lag if problems or potential problems occured
@@ -462,7 +469,7 @@ function playBuffer(seq) {
 function fetchNewPacket (seq, handler) {
     //Create placeholder for received packet
     gPkts[seq] = null;
-    fetchPacket(seq, handler);
+    fetchPacket(seq, handler, true);
 }
 
 function packetFail () {
@@ -472,7 +479,7 @@ function packetFail () {
     }
 }
 
-function fetchPacket (seq, handler) {
+function fetchPacket (seq, handler, cache) {
     //Abort if packet has expired
     if (!gPkts.hasOwnProperty(seq)) {
         return
@@ -490,6 +497,11 @@ function fetchPacket (seq, handler) {
     //console.log("Request seq : " + seq);
     req.onload = function () {
         if (req.status == 200) {
+            //Abort if not playing
+            if (!gPlaying) {
+                return
+            }
+            
             //Abort if packet placeholder has expired
             if (!gPkts.hasOwnProperty(seq)) {
                 return;
@@ -524,12 +536,14 @@ function fetchPacket (seq, handler) {
                 }
             }
         } else {
-            retryPacket();
+            console.log("Retrying packet " + seq + " on " + req.status);
+            retryPacket(seq, handler);
         }
     };
     //Try again after time
     req.onerror = function () {
-        retryPacket(seq);
+        console.log("Retrying packet " + seq + " on packet error");
+        retryPacket(seq, handler);
     };
     req.ontimeout = function () {
         if (gPkts.hasOwnProperty(seq)) {
@@ -539,20 +553,29 @@ function fetchPacket (seq, handler) {
     }
 
     req.responseType = "arraybuffer";
-    req.open("GET", url);
-    req.setRequestHeader("Cache-Control","");
+    req.open("GET", url + ((cache)?"":"?retry=" + Math.floor(Math.random() * 1000)));
+    req.setRequestHeader("Cache-Control",(cache)?"":"no-cache");
     req.setRequestHeader("pragma","");
     req.timeout = gPktLifetime;
     req.send();    
 }
-function retryPacket (seq) {
+function retryPacket (seq, handler) {
     //Retry packet after delay if still valid
-    if (gPkts.hasOwnProperty(seq)) {
-        packetFail();
-        setTimeout(function () {
-            console.log("Retrying packet : " + seq);
-            fetchPacket(seq);
-        }, gPktRetry);        
+    if (gPlaying) {
+        retryTime = (gPktTime / 2);
+        if (gPktRetry > retryTime) {
+            retryTime = gPktRetry;
+        }
+        if (gPkts.hasOwnProperty(seq)) {
+            packetFail();
+            //Only retry while packet still relavent
+            if (gSeq < (seq + 1)) {
+                setTimeout(function () {
+                    console.log("Retrying packet : " + seq);
+                    fetchPacket(seq, handler, false);
+                }, retryTime);
+            }
+        }
     }
 }
 
@@ -662,12 +685,33 @@ function playPcm(samples, timeRtp) {
 }
 
 gAmrwbWorker.onmessage = function (e) {
+    var averageDelta = 0;
+    var futureToAverage = 0;
+    
     if (gstartDecodeTimeStamp) {
+        //Time decoder just took
         gDecodeTime = ((new Date).getTime() - gstartDecodeTimeStamp) / 1000.0;
-        
-        if (gDecodeTime > (gFutureTime / 2)) {
-            console.log("Increasing audio DSP time seconds allocation from " + gFutureTime + " to " + (gFutureTime + gFutureIncrement + " after overshoot of of " + (gDecodeTime - (gFutureTime / 2))));
-            gFutureTime += gFutureIncrement;
+        //Update average
+        if (gFutureHoldoffCount > gFutureHoldoff) {
+            if (!gDecodeTimeAv) {
+                gDecodeTimeAv = gDecodeTime;
+            } else {
+                averageDelta = (gDecodeTime - gDecodeTimeAv) / gDecodeTimeAvN;
+                gDecodeTimeAv = gDecodeTimeAv + averageDelta;
+                futureToAverage = Math.abs(((gDecodeTimeAv * gFutureMargin) - gFutureTime) / gFutureTime);
+            }
+        } else {
+            gFutureHoldoffCount++;
+            gDecodeTimeAv = gFutureTime / gFutureMargin;
+        }
+        //If average is >gFutureChangeThreshold different to 1/gFutureMargin current future allowence then update
+        if (futureToAverage > gFutureChangeThreshold) {
+            if ((gDecodeTimeAv * gFutureMargin) < gFutureTimeMin) {
+                gFutureTime = gFutureTimeMin;
+            } else {
+                console.log("Updating audio DSP time allocation seconds");
+                gFutureTime = Math.round(gDecodeTimeAv * gFutureMargin * 100) / 100;
+            }
         }
     }
     gstartDecodeTimeStamp = null;
@@ -802,6 +846,7 @@ function startPlayer() {
     console.log("Stop any existing");
     stopPlayer();
     console.log("Starting player");
+    gFutureHoldoffCount = 0;
     //Do we need to get position
     if (!gOnLan && !gGeoLat) {
         var geoDiv = document.getElementById("geoBox");
@@ -844,6 +889,12 @@ function startPlayer2 () {
 
 function fullStopPlayer () {
     gPlayIntention = false;
+    
+    if (gCtx) {
+        gCtx.close();
+        gCtx = null;
+    }
+    
     if (gPlayTimeout) {
         clearInterval(gPlayTimeout);
         gPlayTimeout = null;
@@ -860,12 +911,6 @@ function stopPlayer() {
     gPlaying = false;
     gNextSeqQry = -1;
     gPktTime = -1;    
-    
-  
-    if (gCtx) {
-        gCtx.close();
-        gCtx = null;
-    }
     
     //Stop packet reading loops
     clearInterval(gBufferLoop);
