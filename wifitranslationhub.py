@@ -24,9 +24,6 @@ import ClientUuidRx
 import Webserver
 from Log import log, log_init
 
-# TEST TEST
-#import stacktracer
-
 origHandler1 = False
 origHandler2 = False
 origHandler3 = False
@@ -41,10 +38,6 @@ ended = False
 
 
 def main():
-
-    # TEST TEST
-    #print(sys.executable)
-    #stacktracer.trace_start("web/trace.html", interval=5, auto=True)  # Set auto flag to always update file!
 
     global origHandler1
     global origHandler2
@@ -106,9 +99,6 @@ def stopAll(signum, frame):
 
     log().info("Waiting for config thread")
     configThread.join()
-
-    # TEST TEST
-    #stacktracer.trace_stop()
 
     # Signal webserver to stop
     origHandler1(signal.SIGINT, frame)
