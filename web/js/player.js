@@ -553,7 +553,7 @@ function fetchPacket (seq, handler, cache) {
     }
 
     req.responseType = "arraybuffer";
-    req.open("GET", url + ((cache)?"":"?retry=" + Math.floor(Math.random() * 1000)));
+    req.open("GET", url + ((cache)?"":"a"));
     req.setRequestHeader("Cache-Control",(cache)?"":"no-cache");
     req.setRequestHeader("pragma","");
     req.timeout = gPktLifetime;

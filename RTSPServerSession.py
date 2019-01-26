@@ -277,8 +277,8 @@ def urlDecode(url):
             channel = int(channelText)
             break
     #Do we have a sequence number (one or more number of digits)
-    if len(pathSplit) > 1 and re.search("^[0-9]+$", pathSplit[1]):
-        seqText = pathSplit[1]
+    if len(pathSplit) > 1 and re.search("^[0-9]+[a-z]*$", pathSplit[1]):
+        seqText = re.findall(r'\d+', pathSplit[1])[0]
         seq = int(seqText)
     #Get parameters if possible
     params = {}
