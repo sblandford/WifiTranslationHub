@@ -536,14 +536,23 @@ function fetchPacket (seq, handler, retryCount) {
                 }
             }
         } else {
+            // Cache-busting retry. The added a-z character is ignored by the server but forces
+            // cache to treat as a different request
+            retryCount = 1;
+            if (req.responseURL.match(/[a-z]$/)) {
+                retryCount = req.responseURL.match(/[a-z]$/)[0].charCodeAt(0) - "a".charCodeAt(0) + 2;
+                if (retryCount > "z".charCodeAt(0)) {
+                    retryCount = 1;
+                }
+            }
             console.log("Retrying packet " + seq + " on " + req.status);
-            retryPacket(seq, handler);
+            retryPacket(seq, handler, retryCount);
         }
     };
     //Try again after time
     req.onerror = function () {
         console.log("Retrying packet " + seq + " on packet error");
-        retryPacket(seq, handler);
+        retryPacket(seq, handler, 0);
     };
     req.ontimeout = function () {
         if (gPkts.hasOwnProperty(seq)) {
@@ -553,13 +562,13 @@ function fetchPacket (seq, handler, retryCount) {
     }
 
     req.responseType = "arraybuffer";
-    req.open("GET", url + ((retryCount == 0)?"":"a"));
+    req.open("GET", url + ((retryCount == 0)?"":String.fromCharCode(retryCount + "a".charCodeAt(0) - 1)));
     req.setRequestHeader("Cache-Control",(retryCount == 0)?"":"no-cache");
     req.setRequestHeader("pragma","");
     req.timeout = gPktLifetime;
     req.send();    
 }
-function retryPacket (seq, handler) {
+function retryPacket (seq, handler, retryCount) {
     //Retry packet after delay if still valid
     if (gPlaying) {
         retryTime = (gPktTime / 2);
@@ -572,7 +581,7 @@ function retryPacket (seq, handler) {
             if (gSeq < (seq + 1)) {
                 setTimeout(function () {
                     console.log("Retrying packet : " + seq);
-                    fetchPacket(seq, handler, 1);
+                    fetchPacket(seq, handler, retryCount);
                 }, retryTime);
             }
         }
