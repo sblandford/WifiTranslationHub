@@ -469,7 +469,7 @@ function playBuffer(seq) {
 function fetchNewPacket (seq, handler) {
     //Create placeholder for received packet
     gPkts[seq] = null;
-    fetchPacket(seq, handler, true);
+    fetchPacket(seq, handler, 0);
 }
 
 function packetFail () {
@@ -479,7 +479,7 @@ function packetFail () {
     }
 }
 
-function fetchPacket (seq, handler, cache) {
+function fetchPacket (seq, handler, retryCount) {
     //Abort if packet has expired
     if (!gPkts.hasOwnProperty(seq)) {
         return
@@ -553,8 +553,8 @@ function fetchPacket (seq, handler, cache) {
     }
 
     req.responseType = "arraybuffer";
-    req.open("GET", url + ((cache)?"":"a"));
-    req.setRequestHeader("Cache-Control",(cache)?"":"no-cache");
+    req.open("GET", url + ((retryCount == 0)?"":"a"));
+    req.setRequestHeader("Cache-Control",(retryCount == 0)?"":"no-cache");
     req.setRequestHeader("pragma","");
     req.timeout = gPktLifetime;
     req.send();    
@@ -572,7 +572,7 @@ function retryPacket (seq, handler) {
             if (gSeq < (seq + 1)) {
                 setTimeout(function () {
                     console.log("Retrying packet : " + seq);
-                    fetchPacket(seq, handler, false);
+                    fetchPacket(seq, handler, 1);
                 }, retryTime);
             }
         }

@@ -160,6 +160,9 @@ UUID length constant for checking UUID validity
 ##### UUID_TIMEOUT_SECONDS = 2.0
 Timeout for UUID pings sent by multicast Wifi Translation App clients
 
+##### HTTP_TEST_ERROR_PERCENT = 0
+Introduce random 404 errors for test purposes, not for normal use
+
 ##### 
 ##### MAX_RECV = 256
 Maximum size in bytes of received RTSP correspondence

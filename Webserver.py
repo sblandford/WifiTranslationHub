@@ -11,6 +11,7 @@ except ImportError:
 import http.server
 import mimetypes
 import os
+import random
 import re
 import socket
 import socketserver
@@ -139,13 +140,16 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     self._respond(contentType, bytearray(content, "utf8"))
                     return
                 elif seq >= 0:
-                    log().debug("RTP packet over HTTP requested by on channel: %d, seq: %d", channel, seq)
-                    contentType = "application/octet-stream"
-                    binContent = MulticastRxUniTx.getHttpRtpPacketSeq(channel, seq)
-                    if binContent:
-                        self._respond(contentType, binContent, config.HTTP_RTP_CACHE_SECONDS)
+                    if config.HTTP_TEST_ERROR_PERCENT > 0 and random.randint(0, 100) < config.HTTP_TEST_ERROR_PERCENT:
+                        self._error(404, "No RTP packet available with test failure percentage of " + str(config.HTTP_TEST_ERROR_PERCENT))
                     else:
-                        self._error(404, "No RTP packet available")
+                        log().debug("RTP packet over HTTP requested by on channel: %d, seq: %d", channel, seq)
+                        contentType = "application/octet-stream"
+                        binContent = MulticastRxUniTx.getHttpRtpPacketSeq(channel, seq)
+                        if binContent:
+                            self._respond(contentType, binContent, config.HTTP_RTP_CACHE_SECONDS)
+                        else:
+                            self._error(404, "No RTP packet available")
             elif "/sdp/" in path:
                 # Assume multicast SDP file request
                 contentType = "application/sdp"
