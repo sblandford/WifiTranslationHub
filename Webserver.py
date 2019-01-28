@@ -89,8 +89,15 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(binContent)
 
-    def _error(self, code, message):
-        self.send_error(code, message)
+    def _error(self, code, message, cache = True):
+        if cache:
+            self.send_error(code, message)
+        else:
+            self.send_response(code, message)
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.send_header("Pragma", "no-cache")
+            self.send_header("Expires", "0")
+            self.end_headers()
 
     def _redirect(self, url):
         self.send_response(307)
@@ -141,7 +148,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     return
                 elif seq >= 0:
                     if config.HTTP_TEST_ERROR_PERCENT > 0 and random.randint(0, 100) < config.HTTP_TEST_ERROR_PERCENT:
-                        self._error(404, "No RTP packet available with test failure percentage of " + str(config.HTTP_TEST_ERROR_PERCENT))
+                        self._error(404, "No RTP packet available. Test-mode failure percentage is set to " + str(config.HTTP_TEST_ERROR_PERCENT), cache = False)
                     else:
                         log().debug("RTP packet over HTTP requested by on channel: %d, seq: %d", channel, seq)
                         contentType = "application/octet-stream"
@@ -149,7 +156,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         if binContent:
                             self._respond(contentType, binContent, config.HTTP_RTP_CACHE_SECONDS)
                         else:
-                            self._error(404, "No RTP packet available")
+                            self._error(404, "No RTP packet available", cache = False)
             elif "/sdp/" in path:
                 # Assume multicast SDP file request
                 contentType = "application/sdp"

@@ -277,6 +277,7 @@ def urlDecode(url):
             channel = int(channelText)
             break
     #Do we have a sequence number (one or more number of digits)
+    # Allow lowercase letters at end of number but ignore. This is part of the cache-busting retry mechanism
     if len(pathSplit) > 1 and re.search("^[0-9]+[a-z]*$", pathSplit[1]):
         seqText = re.findall(r'\d+', pathSplit[1])[0]
         seq = int(seqText)
