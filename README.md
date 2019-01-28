@@ -1,5 +1,5 @@
 # WifiTranslationHub
-Hub writing in Python 3.5 for the Wifi Translation Android app to enable management and unicast web-player fallback
+Hub written in Python 3.5+ for the Wifi Translation Android app to enable management and unicast web-player fallback
 
 Intended for use with the WifiTranslation Android app https://github.com/sblandford/WifiTranslation.
 

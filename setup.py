@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='WifiTranslationHub',
-    version='0.2',
+    version='0.3',
     packages=[],
     url='https://github.com/sblandford/WifiTranslationHub',
     license='MIT',

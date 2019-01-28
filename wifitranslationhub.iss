@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define WifiXlationAppName "Wifi Translation Hub"
-#define WifiXlationAppVersion "0.2"
+#define WifiXlationAppVersion "0.3"
 #define WifiXlationAppPublisher "BKWSU"
 #define WifiXlationAppURL "https://github.com/sblandford/WifiTranslationHub"
 #define WifiXlationAppExeName "wifitranslationhub.exe"
