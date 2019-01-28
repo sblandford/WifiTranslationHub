@@ -166,7 +166,6 @@ def updateConfig(appdata):
 
         time.sleep(config.CONFIG_UPDATE_SECONDS)
 
-
 # Program Start Point
 if __name__ == "__main__":
     main()

@@ -165,46 +165,48 @@ def timeHttpClient(uuid):
         log().info("Timed out HTTP client uuid: %s", uuid)
         removeHttpClient(uuid)
 
-#Wait for RTP packet and return it
+# Wait for RTP packet and return it
+# Return values (packet/false, cache)
 def getHttpRtpPacketSeq(channel, seq):
     global privChannelDict
     global packetCache
-    
+
+
     #Quick check to see if in cache
     #with privChannelDict['channels'][channel]['lock']:
     if seq in packetCache:
         log().debug("Cache hit on packet seq : %d", seq)
-        return packetCache[seq]
+        return (packetCache[seq], True)
     
     #Can't return old packet
     if seq < getSeq(channel):
         log().debug("Request for old HTTP RTP packet %d when %d is available", seq, getSeq(channel))
-        return False
+        return (False, True)
     #Future limited to prevent waiting forever
     if seq > getSeq(channel) + config.HTTP_MAX_SEQ_AHEAD:
         log().debug("Request for HTTP RTP packet %d too far in future when %d is possible", seq, (getSeq(channel) + config.HTTP_MAX_SEQ_AHEAD))
-        return False
+        return (False, False)
     #Wait until requested seq arrives
     if not 'newPacketLock' in privChannelDict['channels'][channel]:
         log().debug("Expected packetlock for HTTP RTP packet not found")
-        return False
+        return (False, False)
     while seq > getSeq(channel):
         with privChannelDict['channels'][channel]['newPacketLock']:
             try:
                 privChannelDict['channels'][channel]['newPacketLock'].wait()
             except KeyboardInterrupt:
-                return False
+                return (False, True)
     #Probably expired waiting
     if seq != getSeq(channel):
         #See if it has appeared in cache before giving up
         if seq in packetCache:
             log().debug("Cache hit on packet seq : %d", seq)
-            return packetCache[seq]        
+            return (packetCache[seq], True)
         log().debug("Packet %d expired waiting when %d is now available", seq, getSeq(channel))
-        return False
+        return (False, True)
     #We have our packet
     with privChannelDict['channels'][channel]['rtpLock']:
-        return privChannelDict['channels'][channel]['rtpPacket']
+        return (privChannelDict['channels'][channel]['rtpPacket'], True)
 
 #Get rough integer kbps for SDP file creation
 def getKbps(channel):

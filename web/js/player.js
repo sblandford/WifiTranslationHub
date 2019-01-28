@@ -12,7 +12,8 @@ var gPkts = {};
 var gPktFails = 0;
 var gMaxPktFails = 20;
 var gPktLifetime = 1000;
-var gPktRetry = 20;
+var gPktRetryDiv = 3
+var gPktRetryMinMs = 20;
 var gBuffStarted = false;
 var gBufferLoop = null;
 var gSeqUpdateLoop = null;
@@ -469,7 +470,7 @@ function playBuffer(seq) {
 function fetchNewPacket (seq, handler) {
     //Create placeholder for received packet
     gPkts[seq] = null;
-    fetchPacket(seq, handler, 0);
+    fetchPacket(seq, handler, true);
 }
 
 function packetFail () {
@@ -479,7 +480,7 @@ function packetFail () {
     }
 }
 
-function fetchPacket (seq, handler, retryCount) {
+function fetchPacket (seq, handler, cache) {
     //Abort if packet has expired
     if (!gPkts.hasOwnProperty(seq)) {
         return
@@ -536,23 +537,14 @@ function fetchPacket (seq, handler, retryCount) {
                 }
             }
         } else {
-            // Cache-busting retry. The added a-z character is ignored by the server but forces
-            // cache to treat as a different request
-            retryCount = 1;
-            if (req.responseURL.match(/[a-z]$/)) {
-                retryCount = req.responseURL.match(/[a-z]$/)[0].charCodeAt(0) - "a".charCodeAt(0) + 2;
-                if (retryCount > "z".charCodeAt(0)) {
-                    retryCount = 1;
-                }
-            }
             console.log("Retrying packet " + seq + " on " + req.status);
-            retryPacket(seq, handler, retryCount);
+            retryPacket(seq, handler);
         }
     };
     //Try again after time
     req.onerror = function () {
         console.log("Retrying packet " + seq + " on packet error");
-        retryPacket(seq, handler, 0);
+        retryPacket(seq, handler);
     };
     req.ontimeout = function () {
         if (gPkts.hasOwnProperty(seq)) {
@@ -562,18 +554,17 @@ function fetchPacket (seq, handler, retryCount) {
     }
 
     req.responseType = "arraybuffer";
-    req.open("GET", url + ((retryCount == 0)?"":String.fromCharCode(retryCount + "a".charCodeAt(0) - 1)));
-    req.setRequestHeader("Cache-Control",(retryCount == 0)?"":"no-cache");
-    req.setRequestHeader("pragma","");
+    req.open("GET", url);
+    req.setRequestHeader("Cache-Control",(cache)?"":"no-cache");
     req.timeout = gPktLifetime;
     req.send();    
 }
-function retryPacket (seq, handler, retryCount) {
+function retryPacket (seq, handler) {
     //Retry packet after delay if still valid
     if (gPlaying) {
-        retryTime = (gPktTime / 2);
-        if (gPktRetry > retryTime) {
-            retryTime = gPktRetry;
+        retryTime = (gPktTime / gPktRetryDiv);
+        if (gPktRetryMinMs > retryTime) {
+            retryTime = gPktRetryMinMs;
         }
         if (gPkts.hasOwnProperty(seq)) {
             packetFail();
@@ -581,8 +572,10 @@ function retryPacket (seq, handler, retryCount) {
             if (gSeq < (seq + 1)) {
                 setTimeout(function () {
                     console.log("Retrying packet : " + seq);
-                    fetchPacket(seq, handler, retryCount);
+                    fetchPacket(seq, handler, false);
                 }, retryTime);
+            } else {
+                console.log("Retry window has expired for packet : " + seq);
             }
         }
     }

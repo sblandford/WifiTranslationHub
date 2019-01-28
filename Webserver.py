@@ -89,7 +89,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(binContent)
 
-    def _error(self, code, message, cache = True):
+    def _error(self, code, message, cache=True):
         if cache:
             self.send_error(code, message)
         else:
@@ -152,11 +152,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     else:
                         log().debug("RTP packet over HTTP requested by on channel: %d, seq: %d", channel, seq)
                         contentType = "application/octet-stream"
-                        binContent = MulticastRxUniTx.getHttpRtpPacketSeq(channel, seq)
+                        binContent, cache = MulticastRxUniTx.getHttpRtpPacketSeq(channel, seq)
                         if binContent:
                             self._respond(contentType, binContent, config.HTTP_RTP_CACHE_SECONDS)
                         else:
-                            self._error(404, "No RTP packet available", cache = False)
+                            self._error(404, "No RTP packet available with cache : " + cache, cache=cache)
             elif "/sdp/" in path:
                 # Assume multicast SDP file request
                 contentType = "application/sdp"
