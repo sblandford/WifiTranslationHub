@@ -90,7 +90,7 @@ def addHttpClientIfNot(clientInfo, onLan):
     if channel >= config.MAX_CHANNELS:
         log().error("Attempt to request channel %d above max channel %d", channel, config.MAX_CHANNELS)
         return
-    #Do nothing if already registered unless a channel change
+    # Do nothing if already registered unless a channel change
     channelChanged = False
     foundUuid = False
     with privChannelDict['channels'][channel]['lock']:
@@ -172,21 +172,21 @@ def getHttpRtpPacketSeq(channel, seq):
     global packetCache
 
 
-    #Quick check to see if in cache
-    #with privChannelDict['channels'][channel]['lock']:
+    # Quick check to see if in cache
+    # with privChannelDict['channels'][channel]['lock']:
     if seq in packetCache:
         log().debug("Cache hit on packet seq : %d", seq)
         return (packetCache[seq], True)
     
-    #Can't return old packet
+    # Can't return old packet if not found in packet cache
     if seq < getSeq(channel):
         log().debug("Request for old HTTP RTP packet %d when %d is available", seq, getSeq(channel))
         return (False, True)
-    #Future limited to prevent waiting forever
+    # Future limited to prevent waiting forever
     if seq > getSeq(channel) + config.HTTP_MAX_SEQ_AHEAD:
         log().debug("Request for HTTP RTP packet %d too far in future when %d is possible", seq, (getSeq(channel) + config.HTTP_MAX_SEQ_AHEAD))
         return (False, False)
-    #Wait until requested seq arrives
+    # Wait until requested seq arrives
     if not 'newPacketLock' in privChannelDict['channels'][channel]:
         log().debug("Expected packetlock for HTTP RTP packet not found")
         return (False, False)
@@ -196,19 +196,19 @@ def getHttpRtpPacketSeq(channel, seq):
                 privChannelDict['channels'][channel]['newPacketLock'].wait()
             except KeyboardInterrupt:
                 return (False, True)
-    #Probably expired waiting
+    # Probably expired waiting
     if seq != getSeq(channel):
-        #See if it has appeared in cache before giving up
+        # See if it has appeared in cache before giving up
         if seq in packetCache:
             log().debug("Cache hit on packet seq : %d", seq)
             return (packetCache[seq], True)
         log().debug("Packet %d expired waiting when %d is now available", seq, getSeq(channel))
         return (False, True)
-    #We have our packet
+    # We have our packet
     with privChannelDict['channels'][channel]['rtpLock']:
         return (privChannelDict['channels'][channel]['rtpPacket'], True)
 
-#Get rough integer kbps for SDP file creation
+# Get rough integer kbps for SDP file creation
 def getKbps(channel):
     if channel >= 0 and 'kbps' in channelDict['channels'][channel]:
         return channelDict['channels'][channel]['kbps']
@@ -260,9 +260,9 @@ def startAll(channelDictIn, channelStatDictIn):
     log().info("Starting all channel threads")
     for i in range(0, config.MAX_CHANNELS):
         runChannel(i)
-    #Re-call since now privChannelDict is set to something useful
+    # Re-call since now privChannelDict is set to something useful
     BackEnd.importLocks(lock, privChannelDict)
-    #Start creating short stats
+    # Start creating short stats
     thread = threading.Thread(target=shortStatWorker, args=())
     thread.start()
         
@@ -320,12 +320,12 @@ def openTxPorts(clientInfo):
         break
     return (sock0, port0, sock1, port1)
 
-#Quick check that data packet is and RTP/AMR packet
+# Quick check that data packet is and RTP/AMR packet
 def amrPacket(data):
     return len(data) > config.RTP_HEADER_SIZE and (data[1] & 0x7F) == config.RTP_PAYLOAD_ID and data[
         config.RTP_HEADER_SIZE] == config.RTP_TOC_HEADER
 
-#Find the kbps of the AMR data based on first AMR chunk or packet
+# Find the kbps of the AMR data based on first AMR chunk or packet
 def amrKbps(data):
     kbpsLookup = [6, 9, 13, 14, 16, 18, 20, 23, 24, 0, 0, 0, 0, 0, 0, 0]
     tocHeader = data[config.RTP_HEADER_SIZE + 1]
@@ -415,7 +415,7 @@ def reflectRTP(channel):
             with privChannelDict['channels'][channel]['newPacketLock']:
                 privChannelDict['channels'][channel]['newPacketLock'].notify_all()
 
-            #Process RTP client
+            # Process RTP client
             with privChannelDict['channels'][channel]['lock']:
                 rtspSessions = list(channelDict['channels'][channel]['rtspSessions'])
             for sessionId in rtspSessions:

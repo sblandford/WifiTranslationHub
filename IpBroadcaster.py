@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+# !/usr/bin/python3
 
 __author__ = 'Simon Blandford'
 
@@ -91,9 +91,9 @@ def getIp():
     log().info('Our local IP address is ' + str(ip));
     hubAddress = str(ip)
 
-    #Try real DNS server query
+    # Try real DNS server query
     dnsResponse = dnsQuery(ip)
-    #Otherwise try just getting hostname
+    # Otherwise try just getting hostname
     if dnsResponse == "T":
         log().warning("Unable to find DNS server by guessing. Attempting to determine hostname == IP locally")
         try:
@@ -118,8 +118,8 @@ def getIp():
     return True, ip
 
 def dnsQuery(ip):
-    #Assume DNS server is on .1 of the our /24 IP range
-    #Big assumption, but worth trying
+    # Assume DNS server is on .1 of the our /24 IP range
+    # Big assumption, but worth trying
     target = re.sub("\.[0-9]+$", ".1", ip)
     id = random.randint(0,0xFFFF).to_bytes(2, byteorder='big')
     # Bit 16        : Response/Query flag       0 = query
@@ -161,7 +161,7 @@ def dnsQuery(ip):
     for i in range(0, config.MAX_DNS_REQUESTS):
         sock.sendto(request, (target, 53))
 
-        #Wait for response with our ID
+        # Wait for response with our ID
         while True:
             try:
                 response = sock.recv(10240)
@@ -172,9 +172,9 @@ def dnsQuery(ip):
                 gotResponse = True
                 break
     if not gotResponse:
-        #Timeout
+        # Timeout
         return "T"
-    #Check flags indicate "OK"
+    # Check flags indicate "OK"
     respFlags = int.from_bytes(response[2:4], byteorder='big') & int('0b1000000000001111', 2)
     if respFlags != int('0b1000000000000000', 2):
         return ''
@@ -184,11 +184,11 @@ def dnsQuery(ip):
     respNsCount = int.from_bytes(response[8:10], byteorder='big')
     respArCount = int.from_bytes(response[10:12], byteorder='big')
 
-    #Should have 1 question and 1 answer only
+    # Should have 1 question and 1 answer only
     if respQCount != 1 or respAnCount != 1 or respNsCount != 0 or respArCount != 0:
         return ''
 
-    #Short-cut to IP address returned which is last 4 bytes
+    # Short-cut to IP address returned which is last 4 bytes
 
     l = len(response)
     ip =  str(int.from_bytes(response[l - 4: l - 3], byteorder='big')) + "."

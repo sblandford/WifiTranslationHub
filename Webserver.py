@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# !/usr/bin/env python3
 
 __author__ = "Simon Blandford"
 
@@ -66,13 +66,13 @@ class ThreadingSimpleServer (socketserver.ThreadingMixIn, http.server.HTTPServer
 
 class Handler(http.server.BaseHTTPRequestHandler):
     def __init__(self, request, client_address, server):
-        #Timeout causes Android to only partially load pages ??
-        #self.timeout = 30.0
+        # Timeout causes Android to only partially load pages ??
+        # self.timeout = 30.0
         http.server.BaseHTTPRequestHandler.__init__(self, request, client_address, server)
         self.protocol_version = "HTTP/1.1"
 
     def log_message(self, format, *args):
-        #Filter out timeout and 200 messages
+        # Filter out timeout and 200 messages
         for arg in args:
             if str(arg) == "timed out" or str(arg) == "200":
                 return
@@ -135,7 +135,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         if channel >= 0:
             if '/rtp/' in path:
-                #If we have a channel and a uuid parameter then register client and return seq number
+                # If we have a channel and a uuid parameter then register client and return seq number
                 if 'uuid' in params and len(params['uuid']) == config.UUID_LENGTH:
                     if not onLan:
                         code, problem = BackEnd.checkRange(params)
@@ -156,7 +156,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         if binContent:
                             self._respond(contentType, binContent, config.HTTP_RTP_CACHE_SECONDS)
                         else:
-                            self._error(404, "No RTP packet available with cache : " + cache, cache=cache)
+                            self._error(404, "No RTP packet available with cache : " + str(cache), cache=cache)
             elif "/sdp/" in path:
                 # Assume multicast SDP file request
                 contentType = "application/sdp"
@@ -197,7 +197,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self._respond(contentType, bytearray(content, 'utf8'), config.HTTP_QR_CACHE_SECONDS)
             return
 
-        #Default to a simple static content web server
+        # Default to a simple static content web server
         if len(path) == 0 or path == "/":
             path = "index.html"
 
@@ -216,7 +216,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         else:
             binContent = bytearray(fsock.read())
             fsock.close()
-            #Disable Android app download if index file and config set. So all clients use web app only.
+            # Disable Android app download if index file and config set. So all clients use web app only.
             if isIndex and not config.QR_CODE_INCLUDE_ANDROID_APP:
                 binContent = binContent.replace(b"includeApp = true", b"includeApp = false")
             self._respond(contentType, binContent, config.HTTP_WEB_CACHE_SECONDS)

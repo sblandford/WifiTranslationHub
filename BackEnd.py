@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+# !/usr/bin/python3
 
 __author__ = "Simon Blandford"
 
@@ -81,7 +81,7 @@ def respond(path, params, fullPath, onLan = True):
             )
             log().warning(problem)
         else:
-            #Only consider commands if authentication checks out
+            # Only consider commands if authentication checks out
             if 'chname' in params:
                 if params['chname'][0].isdigit() and params['chname'][1].isdigit():
 
@@ -137,14 +137,14 @@ def respond(path, params, fullPath, onLan = True):
             if code == 200 and 'idrename' and 'name' in params:
                 id = params['idrename']
                 name = params['name']
-                #Create frienly name dictionary if not there
+                # Create frienly name dictionary if not there
                 if not 'friendlyNames' in channelDict:
                     channelDict['friendlyNames'] = {}
                 if len(name) > 0:
-                    #Add new name for UUID
+                    # Add new name for UUID
                     channelDict['friendlyNames'][id] = name
                 else:
-                    #Clear name for UUID
+                    # Clear name for UUID
                     if id in channelDict['friendlyNames']:
                         del channelDict['friendlyNames'][id]
             if code == 200 and 'headphones' in params:
@@ -178,7 +178,7 @@ def respond(path, params, fullPath, onLan = True):
                 content = json.dumps(
                         channelDict
                 )
-                #Remove the admin password from the response
+                # Remove the admin password from the response
                 content = re.sub(r',\s"adminPassword[^,}]+', '', content)
     elif "json/stat.json" in path:
         code = 200
@@ -286,7 +286,7 @@ def rewritable(ips):
     ip = getSingleIp(ips)
     return ip in config.HUB_REWRITE_TO_LAN_URL
 
-#First IP is the one we want
+# First IP is the one we want
 def getSingleIp(ips):
     ip = ips
     if len(ips.split(",")) > 1:

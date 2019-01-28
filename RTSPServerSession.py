@@ -74,7 +74,7 @@ class HubServerSession:
 
                     firstLine = request[0].split(' ')
                     if len(firstLine) == 1:
-                        #requestCommand and requestProtocol remembered from last time
+                        # requestCommand and requestProtocol remembered from last time
                         requestPath = firstLine[0]
                     elif len(firstLine) < 3:
                         log().warning("Unknown request type")
@@ -254,33 +254,33 @@ def genSdp(unicast, mCastIp, channel):
 def urlDecode(url):
     channel = -1
     seq = -1
-    #Split at start of params
+    # Split at start of params
     urlSplit = url.split("?")
-    #Before the split is the path
+    # Before the split is the path
     path = urlSplit[0]
-    #Remove the path part
+    # Remove the path part
     urlSplit.remove(path)
-    #Remove double forward slashes and split by forward slash
+    # Remove double forward slashes and split by forward slash
     pathSplit = re.sub("\/+","/",path).split("/")
-    #Remove empty items e.g. resulting for first forward slash
+    # Remove empty items e.g. resulting for first forward slash
     if "" in pathSplit:
         pathSplit.remove("")
-    #Remove protocol and host if RTSP (http server already removes this)
+    # Remove protocol and host if RTSP (http server already removes this)
     if "rtsp:" in pathSplit:
         pathSplit.remove("rtsp:")
         pathSplit.remove(pathSplit[0])
-    #Do we have a channel (two digit code)?
+    # Do we have a channel (two digit code)?
     for i in range(0,2):
         if len(pathSplit) > i and re.search("^[0-9][0-9]$", pathSplit[i]):
             channelText = pathSplit[i]
             pathSplit.remove(channelText)
             channel = int(channelText)
             break
-    #Do we have a sequence number (one or more number of digits)
+    # Do we have a sequence number (one or more number of digits)
     if len(pathSplit) > 1 and re.search("^[0-9]+$", pathSplit[1]):
         seqText = re.findall(r'\d+', pathSplit[1])[0]
         seq = int(seqText)
-    #Get parameters if possible
+    # Get parameters if possible
     params = {}
     if len(urlSplit) > 0:
         paramsPart = "?" + urlSplit[0]
@@ -293,6 +293,6 @@ def urlDecode(url):
                     params[name] = urllib.parse.unquote(value)
                 else:
                     params[name] = "true"
-    #Determine IP address
+    # Determine IP address
     ip = str(ipaddress.ip_address(config.MULTICAST_BASE_ADDR) + channel + config.MUTLICAST_MANAGEMENT_OFFSET)
     return (channel, seq, path, params, ip)

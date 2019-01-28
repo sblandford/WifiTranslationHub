@@ -1,7 +1,7 @@
 __author__ = "Simon Blandford"
 
-#Generate test UUID TX on Ch 1
-#while [ 1 ]; do echo -n "TX42b06595-6d85-4334-946a-6dbd4c2cfe7f" | socat - UDP:228.227.227.225:1234; sleep 1; done
+# Generate test UUID TX on Ch 1
+# while [ 1 ]; do echo -n "TX42b06595-6d85-4334-946a-6dbd4c2cfe7f" | socat - UDP:228.227.227.225:1234; sleep 1; done
 
 from Log import log
 try:

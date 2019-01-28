@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+# !/usr/bin/python3
 
 __author__ = "Simon Blandford"
 
@@ -55,7 +55,7 @@ def main():
     origHandler3 = signal.signal(signal.SIGSEGV, stopAll)
     origHandler4 = signal.signal(signal.SIGTERM, stopAll)
 
-    #https://docs.python.org/3.5/library/configparser.html
+    # https://docs.python.org/3.5/library/configparser.html
     appDataFile = appData()
     log().info("Using application data file : %s", appDataFile)
 
@@ -104,11 +104,11 @@ def stopAll(signum, frame):
     origHandler1(signal.SIGINT, frame)
 
 def appData():
-    #https://stackoverflow.com/questions/1084697/how-do-i-store-desktop-application-data-in-a-cross-platform-way-for-python
+    # https://stackoverflow.com/questions/1084697/how-do-i-store-desktop-application-data-in-a-cross-platform-way-for-python
     APPNAME = os.path.basename(__file__)
     if sys.platform == 'darwin':
         from AppKit import NSSearchPathForDirectoriesInDomains
-        # http://developer.apple.com/DOCUMENTATION/Cocoa/Reference/Foundation/Miscellaneous/Foundation_Functions/Reference/reference.html#//apple_ref/c/func/NSSearchPathForDirectoriesInDomains
+        # http://developer.apple.com/DOCUMENTATION/Cocoa/Reference/Foundation/Miscellaneous/Foundation_Functions/Reference/reference.html# //apple_ref/c/func/NSSearchPathForDirectoriesInDomains
         # NSApplicationSupportDirectory = 14
         # NSUserDomainMask = 1
         # True for expanding the tilde into a fully qualified path
