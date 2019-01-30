@@ -6,13 +6,17 @@
     background-color : lightgoldenrodyellow;
 }
 
+body.body {
+    background-color : black;
+    color: white;
+}
+
 /* Main page */
 div.page {
     position : absolute;
     width: 95vw;
     max-width : 50em;
 }
-
 
 /* Main UI */
 table.ui, th.ui, td.ui  {
@@ -33,12 +37,16 @@ button.ui {
 /* Top section */
 /* Dropdown Button */
 .dropbtn {
-    background-color: DodgerBlue ;
+    /*background-color: DodgerBlue ; */
+    background-color: Black;
     color: white;
     padding: 1em;
     font-size: 1em;
+    font-weight: bold;
     min-width: 10em;
-    border: none;
+    /*border: none;*/
+    border: 0.2em solid DodgerBlue;
+    
     cursor: pointer;
 }
 /* Dropdown button on hover & focus */
@@ -55,20 +63,28 @@ button.ui {
     top: 100%;
     display: none;
     position: absolute;
-    background-color: #f1f1f1;
+    background-color: DarkBlue;
     min-width: 15em;
     box-shadow: 0em 0.5em 1em 0em rgba(0,0,0,0.2);
     z-index: 1;
+    border: 0.2em solid DodgerBlue;
 }
 /* Links inside the dropdown */
 .dropdown-content a {
-    color: black;
     padding: 0.75em 1em;
     text-decoration: none;
     display: block;
+    font-size: 1em;
+    font-weight: bold;
+    color: white;
 }
 /* Change color of dropdown links on hover */
-.dropdown-content a:active {background-color: #ddd}
+.dropdown-content a:active {
+    background-color: blue;
+}
+.dropdown-content a:hover {
+    background-color: blue;
+}
 /* Show a disabled channel */
 .disabled {
     pointer-events:none;
@@ -103,13 +119,16 @@ div.stat {
 /* Lowest section */
 /* Start/Stop Button */
 .startStopBtn {
-    background-color: DodgerBlue ;
-    color: white;
+    /*background-color: DodgerBlue ;*/
     padding: 1em;
     font-size: 1em;
+    font-weight: bold;
     min-width: 10em;
-    border: none;
+    /*border: none; */
     cursor: pointer;
+    border: 0.2em solid DodgerBlue;
+    background-color: Black;
+    color: white;
 }
 /* Start/stop button on hover & focus */
 .startStopBtn:active {
@@ -125,12 +144,14 @@ div.stat {
 }
 /* QR code button */
 .qrBtn {
-    background-color: DodgerBlue ;
-    color: white;
     padding: 1em;
     font-size: 1em;
-    border: none;
+    font-weight: bold;
+    /* border: none; */
     cursor: pointer;
+    border: 0.2em solid DodgerBlue;
+    background-color: Black;
+    color: white;
 }
 /* QR code button on hover & focus */
 .qrBtn:active {
