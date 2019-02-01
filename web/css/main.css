@@ -189,7 +189,7 @@ div.stat {
     display: block;
     visibility: hidden;
     z-index: 1;
-    background-color: white;
+    background-color: MidnightBlue;
     position: fixed;
     top: 50%;
     left: 50%;

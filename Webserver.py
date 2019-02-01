@@ -91,7 +91,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def _error(self, code, message, cache=True):
         if cache:
-            self.send_error(code, message)
+            self.send_response(code, message)
+            self.send_header("Cache-Control", "max-age=" + str(config.HTTP_RTP_CACHE_SECONDS))
+            self.end_headers()
         else:
             self.send_response(code, message)
             self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
