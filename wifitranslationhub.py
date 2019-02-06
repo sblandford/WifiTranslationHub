@@ -131,16 +131,20 @@ def fetchConfig (appdata):
     global channelDict
 
     if os.path.exists(appdata):
-        with open(appdata, "rb") as f:
-            channelDict = pickle.load(f)
-            # Limit number of channels to config
-            chansOrig = channelDict['channels']
-            channelDict['channels'] = {}
-            for i in range(0, config.MAX_CHANNELS):
-                if i in chansOrig:
-                    channelDict['channels'][i] = chansOrig[i]
-                else:
-                    channelDict['channels'][i] = {}
+        try:
+            with open(appdata, "rb") as f:
+                channelDict = pickle.load(f)
+                # Limit number of channels to config
+                chansOrig = channelDict['channels']
+                channelDict['channels'] = {}
+                for i in range(0, config.MAX_CHANNELS):
+                    if i in chansOrig:
+                        channelDict['channels'][i] = chansOrig[i]
+                    else:
+                        channelDict['channels'][i] = {}
+        except:
+            log().error("Unable to read saved config: %s. Reverting to default.", appdata)
+            defaultConfig()
     else:
         defaultConfig()
 

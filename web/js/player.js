@@ -6,6 +6,9 @@ var gUpdateSeq = false;
 var gCtx;
 
 //Packet capture
+var gMinPacketTimeMs = 10;
+var gPacketTimeCount = 1;
+var gPacketTimeCountMax = 10;
 var gNextSeqQry = -1;
 var gPktTime = -1;
 var gPkts = {};
@@ -308,10 +311,16 @@ function testPacket (seq) {
                 if (pktValid(gPkts[seq])) {
                     var time2 = pktTimeCode(gPkts[seq]);
                     gPktTime = time2 - time1;
-                    console.log("Packet time is : " + gPktTime + "ms");
-                    fillBuffer(seq);
-                    playBuffer(seq);
-                    watchDog();
+                    console.log("Packet time (attempt " + gPacketTimeCount + ") is : " + gPktTime + "ms");
+                    if (gPktTime < gMinPacketTimeMs) {
+                        if (gPacketTimeCount++ < gPacketTimeCountMax) {
+                            testPacket (seq);
+                        }
+                    } else {
+                        fillBuffer(seq);
+                        playBuffer(seq);
+                        watchDog();
+                    }
                 }
             });
         }
@@ -871,12 +880,13 @@ function startPlayer2 () {
         source.connect(gCtx.destination);
         if (!gTimeCtxStart) {
             gTimeCtxStart = gCtx.currentTime;
-        }        
+        }      
         source.start();
     }
     
     playPcm.buffer = new Float32Array(0);
     
+    gPacketTimeCount = 1;
     gSeq = -1;
     getNextSeq ();
     
