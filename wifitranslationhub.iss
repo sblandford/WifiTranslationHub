@@ -22,9 +22,9 @@ AppUpdatesURL={#WifiXlationAppURL}
 DefaultDirName={pf}\{#WifiXlationAppName}
 DefaultGroupName={#WifiXlationAppName}
 DisableProgramGroupPage=yes
-LicenseFile=Z:\home\simonb\PycharmProjects\WifiTranslationHub\LICENSE
+LicenseFile=Z:_PWD_\LICENSE
 OutputBaseFilename=WifiTranslationHubsetup
-SetupIconFile=Z:\home\simonb\PycharmProjects\WifiTranslationHub\web\favicon.ico
+SetupIconFile=Z:_PWD_\web\favicon.ico
 Compression=lzma
 SolidCompression=yes
 PrivilegesRequired=admin
@@ -36,64 +36,64 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\wifitranslationhub.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\web\*"; DestDir: "{app}\web"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\_bz2.pyd"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\_hashlib.pyd"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\_lzma.pyd"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\_socket.pyd"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\_ssl.pyd"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-core-console-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-core-datetime-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-core-debug-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-core-errorhandling-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-core-file-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-core-file-l1-2-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-core-file-l2-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-core-handle-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-core-heap-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-core-interlocked-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-core-libraryloader-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-core-localization-l1-2-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-core-memory-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-core-namedpipe-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-core-processenvironment-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-core-processthreads-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-core-processthreads-l1-1-1.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-core-profile-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-core-rtlsupport-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-core-string-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-core-synch-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-core-synch-l1-2-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-core-sysinfo-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-core-timezone-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-core-util-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-crt-conio-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-crt-convert-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-crt-environment-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-crt-filesystem-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-crt-heap-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-crt-locale-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-crt-math-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-crt-process-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-crt-runtime-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-crt-stdio-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-crt-string-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-crt-time-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\api-ms-win-crt-utility-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\base_library.zip"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\nssm.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\config_dist.py"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\pyexpat.pyd"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\python36.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\pywintypes36.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\select.pyd"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\ucrtbase.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\unicodedata.pyd"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\VCRUNTIME140.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\wifitranslationhub.exe.manifest"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\win32api.pyd"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:\home\simonb\PycharmProjects\WifiTranslationHub\dist\windows\wifitranslationhub\win32evtlog.pyd"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\wifitranslationhub.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\web\*"; DestDir: "{app}\web"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\_bz2.pyd"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\_hashlib.pyd"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\_lzma.pyd"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\_socket.pyd"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\_ssl.pyd"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-core-console-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-core-datetime-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-core-debug-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-core-errorhandling-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-core-file-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-core-file-l1-2-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-core-file-l2-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-core-handle-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-core-heap-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-core-interlocked-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-core-libraryloader-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-core-localization-l1-2-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-core-memory-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-core-namedpipe-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-core-processenvironment-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-core-processthreads-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-core-processthreads-l1-1-1.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-core-profile-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-core-rtlsupport-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-core-string-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-core-synch-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-core-synch-l1-2-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-core-sysinfo-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-core-timezone-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-core-util-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-crt-conio-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-crt-convert-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-crt-environment-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-crt-filesystem-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-crt-heap-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-crt-locale-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-crt-math-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-crt-process-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-crt-runtime-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-crt-stdio-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-crt-string-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-crt-time-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\api-ms-win-crt-utility-l1-1-0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\base_library.zip"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\nssm.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\config_dist.py"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\pyexpat.pyd"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\python36.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\pywintypes36.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\select.pyd"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\ucrtbase.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\unicodedata.pyd"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\VCRUNTIME140.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\wifitranslationhub.exe.manifest"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\win32api.pyd"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Z:_PWD_\dist\windows\wifitranslationhub\win32evtlog.pyd"; DestDir: "{app}"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
