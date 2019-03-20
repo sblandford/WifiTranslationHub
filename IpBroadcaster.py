@@ -50,7 +50,12 @@ def broadcastIp():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-    message = config.REQUIRED_HOSTNAME + ' ' + str(ip)
+    # Broadcast the following information: protocol, hostname, ip address, web server access port
+    message = config.HUB_WAN_PROTOCOL + ' ' + \
+              config.HUB_LAN_PROTOCOL + ' ' + \
+              config.REQUIRED_HOSTNAME + ' ' + \
+              str(ip) + ' ' + \
+              str(config.WEB_SERVER_PORT)
     reported = False
     while not ended:
         try:

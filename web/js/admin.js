@@ -354,6 +354,7 @@ function rightClick (e) {
     
     gMenuBox = window.document.querySelector(".uuid-menu-unselected");
     gMenuUuid = e.target.id.split("|")[1];
+    gMenuChannel = e.target.id.split("|")[0];
     
     if (gStatus['channels'][gMenuChannel].hasOwnProperty('allowedIds') && (gStatus['channels'][gMenuChannel]['allowedIds'].indexOf(gMenuUuid) >= 0)) {
         gMenuBox = window.document.querySelector(".uuid-menu-enabled");
