@@ -69,7 +69,11 @@ class HubServerSession:
                     continue
                 if data:
                     lastRxTime = calendar.timegm(time.gmtime())
-                    request = data.decode("utf8").replace('\r', '').split('\n')
+                    try:
+                        request = data.decode("utf8").replace('\r', '').split('\n')
+                    except:
+                        log().warn("Garbled RTSP request")
+                        continue
                     log().debug("Received: %s", request)
 
                     firstLine = request[0].split(' ')
@@ -153,7 +157,6 @@ class HubServerSession:
                                     self.rtspClient['packetRedundancy'] = False
                                     if config.PACKET_REDUNDANCY_FLAG in params:
                                         self.rtspClient['packetRedundancy'] = (params[config.PACKET_REDUNDANCY_FLAG].lower() == "true")
-                                        log().debug("Setting packet redundancy enable for sessionId : %s", self.rtspClient["sessionId"])
                                         log().debug("Setting packet redundancy enable for sessionId : %s", self.rtspClient["sessionId"])
                                     if self.session(request) == self.rtspClient['sessionId']:
                                         MulticastRxUniTx.addRtspClient(self.rtspClient)

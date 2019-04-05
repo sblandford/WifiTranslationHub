@@ -53,6 +53,7 @@ def server():
         try:
             clientInfo = {}
             try:
+                # TODO The IP address appears to be this one and not from the source. Check in Wireshark
                 clientInfo['connection'], (clientInfo['IP'], clientInfo['port']) = hubTcpSocket.accept()
             except socket.timeout:
                 continue
