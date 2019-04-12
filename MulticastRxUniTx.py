@@ -431,13 +431,32 @@ def reflectRTP(channel):
                     clientInfo['rtpOutSocket'].sendto(data, (clientInfo['IP'], clientInfo['clientport']))
                     log().debug('Send %d bytes to %s on IP %s port %d', len(data), clientInfo['sessionId'],
                                   clientInfo['IP'], clientInfo['clientport'])
-                    rtcpReady = select.select([clientInfo['rtcpInSocket']], [], [], 0)
+                    rtcpInPort = clientInfo['rtcpInSocket']
+                    rtcpReady = select.select([rtcpInPort], [], [], 0)
                     if rtcpReady[0]:
-                        log().debug("Reading RTCP packet on port : %d", clientInfo['rtcpInPort'])
-                        rtcpData = clientInfo['rtcpInSocket'].recv(config.HUB_PACKET_BUFFER_SIZE)
+                        log().debug("Reading RTCP packet on port : %d", rtcpInPort.getsockname()[1])
+                        rtcpData = rtcpInPort.recv(config.HUB_PACKET_BUFFER_SIZE)
                         if len(rtcpData):
                             clientInfo['rtcpRxEvent'] = True
                             log().info("RTCP received message : %s", str(rtcpData))
+                    # Check for any packets being sent back from the client on this port
+                    # to get information about the actual listening port since this may have
+                    # been transposed by a NAT
+                    # The client sending RTP
+                    rtpOutPort = clientInfo['rtpOutSocket']
+                    rtpReady = select.select([rtpOutPort], [], [], 0)
+                    if rtpReady[0]:
+                        try:
+                            rtpData, rtpAddress = rtpOutPort.recvfrom(config.HUB_PACKET_BUFFER_SIZE)
+                        except Exception as e:
+                            log().error("Reading RTP packet failed on port : %s", rtpOutPort)
+                            log().error(e.message)
+                        else:
+                            newPort = rtpAddress[1]
+                            log().debug("Received RTP packet at port %d from port : %d", rtpOutPort.getsockname()[1], newPort)
+                            if newPort != clientInfo['clientport']:
+                                log().info("NAT traversal: Re-setting RTP client port from %d to %d", clientInfo['clientport'], newPort)
+                                clientInfo['clientport'] = newPort
             seqPrev = seq
         except Exception as e:
             log().error(e.__doc__)
