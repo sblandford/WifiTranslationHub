@@ -438,7 +438,7 @@ def reflectRTP(channel):
                         rtcpData = rtcpInPort.recv(config.HUB_PACKET_BUFFER_SIZE)
                         if len(rtcpData):
                             clientInfo['rtcpRxEvent'] = True
-                            log().info("RTCP received message : %s", str(rtcpData))
+                            log().info("RTCP received message : %s", ":".join("{:02x}".format(c) for c in rtcpData))
                     # Check for any packets being sent back from the client on this port
                     # to get information about the actual listening port since this may have
                     # been transposed by a NAT
