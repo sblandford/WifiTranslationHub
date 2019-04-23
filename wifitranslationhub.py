@@ -141,6 +141,7 @@ def fetchConfig (appdata):
                     if i in chansOrig:
                         channelDict['channels'][i] = chansOrig[i]
                     else:
+                        # TODO Increasing channel count results in uninitialised channel properties being stored and send to App
                         channelDict['channels'][i] = {}
         except:
             log().error("Unable to read saved config: %s. Reverting to default.", appdata)
@@ -152,7 +153,7 @@ def fetchConfig (appdata):
 def defaultConfig():
     global channelDict
 
-    channelDict['adminPassword'] = config.DEFAULT_ADMIN_PASSWORD;
+    channelDict['adminPassword'] = config.DEFAULT_ADMIN_PASSWORD
     channelDict['channels'] = {}
     for i in range(0, config.MAX_CHANNELS):
         channelDict['channels'][i] = {}
@@ -162,11 +163,22 @@ def updateConfig(appdata):
 
     log().info("Starting config thread")
     prevChannelDict = {}
+    prevChans = ''
     while not ended:
         if json.dumps(channelDict) != json.dumps(prevChannelDict):
             with open(appdata, "wb") as f:
                 pickle.dump(channelDict, f, pickle.HIGHEST_PROTOCOL)
             prevChannelDict = copy.deepcopy(channelDict)
+        statUpdate = False
+        if 'channelStatLock' in channelStatDict:
+            with channelStatDict['channelStatLock']:
+                dictfilt = lambda x, y: dict([(i, x[i]) for i in x if i != y])
+                currentChans = json.dumps(dictfilt(channelStatDict, 'channelStatLock'))
+            if currentChans != prevChans:
+                statUpdate = True
+                prevChans = copy.copy(currentChans)
+            if statUpdate:
+                IpBroadcaster.broadcastChangeAlert()
 
         time.sleep(config.CONFIG_UPDATE_SECONDS)
 

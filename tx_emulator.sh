@@ -39,17 +39,18 @@ declare -g uuids=(
 )
 
 send_audio () {
-    local channel freq quality bitrate
+    local channel freq quality bitrate shift
     channel=$1
     freq=$2
     quality=$3
+    shift=$4
 
     declare -a bitrates=(6600 8850 12650 14250 15850 18250 19850 23050 23850)
         
     bitrate=${bitrates[quality]}
     
 
-    $FFMPEG -re -f lavfi -i "sine=frequency=$freq:sample_rate=16000" -c:a libvo_amrwbenc -b:a $bitrate -f rtp rtp://@228.227.228.$(( 225 + channel )):1234?pkt_size=$PKT_SIZE
+    $FFMPEG -re -f lavfi -i "sine=frequency=$freq:sample_rate=16000" -c:a libvo_amrwbenc -b:a $bitrate -f rtp rtp://@228.227.$(( 226 + ((shift == 1) * 2) )).$(( 225 + channel )):1234?pkt_size=$PKT_SIZE
 }
 
 send_uuid () {
@@ -110,6 +111,7 @@ if echo "$1" | grep -Eq "^[0-2]$"; then
 fi
 
 for (( i=0; i<$MAX_CHANNELS; i++ )); do
-    send_audio $i $(( 432 + (i * 100) )) $(( i % 9 )) &>/dev/null &
+    send_audio $i $(( 432 + (i * 100) )) $(( i % 9 )) 1 &>/dev/null &
+    send_audio $i $(( 864 + (i * 100) )) $(( i % 9 )) 0 &>/dev/null &
     send_uuid $i $setnum &>/dev/null &
 done

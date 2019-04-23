@@ -18,6 +18,7 @@ ended = False
 thread = False
 ip = "0.0.0.0"
 hubAddress = ip
+sock = False
 
 def runThread():
     global thread
@@ -45,6 +46,7 @@ def waitStopThread():
 def broadcastIp():
     global ended
     global ip
+    global sock
 
     getIpStatus, ip = getIp()
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -72,6 +74,15 @@ def broadcastIp():
             reported = False
         time.sleep(config.IP_BROADCAST_SECONDS)
 
+# Let App clients know that there has been a state change
+def broadcastChangeAlert():
+    message = ''
+    if sock:
+        try:
+            log().debug(message)
+            sock.sendto(message.encode(), ('255.255.255.255', config.CHANGE_BROADCAST_PORT))
+        except:
+            log().error("ChangeBroadcast : %s", sys.exc_info()[0])
 
 def getIp():
     global hubAddress
