@@ -2,7 +2,7 @@
 
 __author__ = "Simon Blandford"
 
-# Import any new configuration parameters into user config if missing there
+# Try to import any new configuration parameters into user config if missing there
 import re
 try:
     with open("config.py", "r") as config_file:
@@ -194,15 +194,12 @@ def updateConfig(appdata):
             with open(appdata, "wb") as f:
                 pickle.dump(channelDict, f, pickle.HIGHEST_PROTOCOL)
             prevChannelDict = copy.deepcopy(channelDict)
-        statUpdate = False
         if 'channelStatLock' in channelStatDict:
             with channelStatDict['channelStatLock']:
                 dictfilt = lambda x, y: dict([(i, x[i]) for i in x if i != y])
                 currentChans = json.dumps(dictfilt(channelStatDict, 'channelStatLock'))
             if currentChans != prevChans:
-                statUpdate = True
                 prevChans = copy.copy(currentChans)
-            if statUpdate:
                 IpBroadcaster.broadcastChangeAlert()
 
         time.sleep(config.CONFIG_UPDATE_SECONDS)

@@ -209,12 +209,12 @@ function statusField (newRow, channel) {
 function openField (newRow, channel) {
     var checkInput = document.createElement('input');
     checkInput.type = "checkbox";
-    checkInput.id = "open" + channel;
-    checkInput.checked = gStatus['channels'][channel]['open'];
+    checkInput.id = "locked" + channel;
+    checkInput.checked = ! gStatus['channels'][channel]['open'];
     checkInput.onchange = function () {
         var channel = parseInt(this.id.replace( /^\D+/g, ''));
         var channelParamId = chToParam(channel);
-        sendCommand("open", channelParamId + ((checkInput.checked)?"+":"-"));
+        sendCommand("open", channelParamId + ((checkInput.checked)?"-":"+"));
     }
     newRow.insertCell(-1).appendChild(checkInput);
 }
