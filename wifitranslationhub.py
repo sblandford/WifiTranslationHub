@@ -2,6 +2,32 @@
 
 __author__ = "Simon Blandford"
 
+# Import any new configuration parameters into user config if missing there
+import re
+try:
+    with open("config.py", "r") as config_file:
+        custConfig = config_file.readlines()
+    config_dist_file = open("config_dist.py", "r")
+    missingConfig = []
+    for confLine in config_dist_file:
+        confParam = confLine.split("=")[0].strip()
+        if len(confParam) < 1 or confParam[0] == "#":
+            continue
+        confPattern = "^\s*" + confParam
+        missing = True
+        for custConfigLine in custConfig:
+            if re.search(confPattern, custConfigLine):
+                missing = False
+        if missing:
+            missingConfig.append(confLine)
+    if len(missingConfig) > 0:
+        with open("config.py", "a") as config_file:
+            for missingConfigLine in missingConfig:
+                print ("Adding missing config from default to config.py : " + missingConfigLine)
+                config_file.write(missingConfigLine)
+except:
+    pass
+
 try:
     import config
 except ImportError:
@@ -10,7 +36,6 @@ import copy
 import json
 import pickle
 import os
-import re
 import signal
 import sys
 import threading
