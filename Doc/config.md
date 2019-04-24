@@ -37,8 +37,8 @@ Global coordinates and area where WAN access will be accepted. This enables rece
 ##### HUB_WAN_LOCATION_EARTH_RADIUS_METERS = 6371E3
 This value is unlikely to change!
 
-##### REQUIRED_HOSTNAME = "translation.lan"
-If a DNS query of this hostname matches the HUB_ACCESS_IP_ADDRESS then it is shown on the URL/QR code web page instead of just an IP address.
+##### REQUIRED_HOSTNAME = "xlation.live"
+If a DNS query of this hostname matches the HUB_ACCESS_IP_ADDRESS then it is shown on the URL/QR code web page instead of just an IP address. The TLD must be one recognised as a URL by Android Chome otherwise it gets treated as a search expression.
 
 ##### HUB_ACCESS_IP_ADDRESS = ""
 The IP address of the intended endpoint that user should connect to.
