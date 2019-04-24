@@ -91,7 +91,7 @@ Number of unaccepted connections that the system will allow before refusing new 
 Port web server listens on
 
 ##### IP_BROADCAST_PORT = 1235
-Port of IP address broadcast packets. This is intended as a future way of conveying the IP address of the Hub to the Android Wifi Translation app so it can receive JSON status and configuration.
+Port of IP address broadcast packets. Conveys the IP address of the Hub to the Android Wifi Translation app so it can receive JSON status and configuration.
 
 ##### CHANGE_BROADCAST_PORT = 1236
 Port of change signal packets. Used to alert the Android app of any changes to channel name or state to trigger a status query and make the app more responsive than its default one-minute poll of the status.
@@ -123,10 +123,10 @@ Multicast port used for receiving multicast from the Android Wifi Translation Ap
 Buffer size for receiving multicast packets
 
 ##### MUTLICAST_UUID_OFFSET = 256
-Offset from MULTICAST_BASE_ADDR used by the Wifi Translation App to broadcast its UUID. This is used to identify (and in future lock) which Android phone is Translating.
+Offset from MULTICAST_BASE_ADDR used by the Wifi Translation App to broadcast its UUID. This is used to identify, and lock, which Android phone is Translating.
 
-##### MUTLICAST_MANAGEMENT_OFFSET = 0
-Offset to MULTICAST_BASE_ADDR to add to Hub-managed Wifi Translation App instances to prevent unmanaged devices transmitting on the same channel (not yet implemented)
+##### MUTLICAST_MANAGEMENT_OFFSET = 512
+Offset to MULTICAST_BASE_ADDR to add to Hub-managed Wifi Translation App instances to prevent unmanaged devices transmitting on the same channel
 
 ##### HUB_PACKET_BUFFER_SIZE = 4096
 Buffer size for reading RTCP packets from RTSP clients
