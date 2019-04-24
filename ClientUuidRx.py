@@ -1,3 +1,6 @@
+from ipaddress import _BaseAddress
+from typing import Any, Union
+
 __author__ = "Simon Blandford"
 
 # Generate test UUID TX on Ch 1
@@ -86,7 +89,7 @@ def listenUuid(channel):
     global timeStamp
     log().debug("Started UUID Channel %d thread", channel)
     # Create the datagram socket for receiving channel
-    ip_address = ipaddress.ip_address(config.MULTICAST_BASE_ADDR) + channel + config.MUTLICAST_MANAGEMENT_OFFSET + config.MUTLICAST_UUID_OFFSET
+    ip_address: Union[Union[_BaseAddress, int], Any] = ipaddress.ip_address(config.MULTICAST_BASE_ADDR) + channel + config.MUTLICAST_UUID_OFFSET
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     if sys.platform == 'win32':

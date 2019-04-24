@@ -166,7 +166,6 @@ def fetchConfig (appdata):
                     if i in chansOrig:
                         channelDict['channels'][i] = chansOrig[i]
                     else:
-                        # TODO Increasing channel count results in uninitialised channel properties being stored and send to App
                         channelDict['channels'][i] = {}
         except:
             log().error("Unable to read saved config: %s. Reverting to default.", appdata)

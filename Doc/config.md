@@ -93,6 +93,10 @@ Port web server listens on
 ##### IP_BROADCAST_PORT = 1235
 Port of IP address broadcast packets. This is intended as a future way of conveying the IP address of the Hub to the Android Wifi Translation app so it can receive JSON status and configuration.
 
+##### CHANGE_BROADCAST_PORT = 1236
+Port of change signal packets. Used to alert the Android app of any changes to channel name or state to trigger a status query and make the app more responsive than its default one-minute poll of the status.
+
+
 ##### IP_BROADCAST_SECONDS = 5
 Frequency of the IP broadcasts
 

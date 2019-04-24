@@ -17,19 +17,11 @@ It can also print off a QR code and web address that people can use to get thems
 
 The http system of sending the audio is designed to be cache-friendly to reduce the load on the hub if, say, a cache such as Varnish is used. It would also be possible to serve the http audio over the WAN so that it doesn't even matter if they aren't on the LAN, although some kind of (future) security would be needed to prevent eavesdropping and access in any way to the admin interface.
 
-### What is done so far
-
-1) RTSP relay (although it doesn't currently have a use)
-2) HTTP relay
-
-### What is to do
-
-1) Admin interface and full back end
-2) WAN security
-3) Transmit locking
 
 ## How to use
 
 Run wifitranslationhub.py, or install Output/WifiTranslationHubsetup.exe, on the same LAN as the WifiTranslation multicast.
 
-Access the IP address of the host on port 8080 from a phone web browser to get the relay.
+Go to http://localhost:8080/admin.html to see the admin interface. Then press the QR/URL button to discover the web address to use by devices to access the player.
+
+See the docs folder for more information
