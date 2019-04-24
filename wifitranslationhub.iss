@@ -38,6 +38,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 Source: "Z:_PWD_\dist\windows\wifitranslationhub\wifitranslationhub.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Z:_PWD_\web\*"; DestDir: "{app}\web"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "Z:_PWD_\Doc\*"; DestDir: "{app}\Doc"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "Z:_PWD_\dist\windows\wifitranslationhub\_bz2.pyd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Z:_PWD_\dist\windows\wifitranslationhub\_hashlib.pyd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Z:_PWD_\dist\windows\wifitranslationhub\_lzma.pyd"; DestDir: "{app}"; Flags: ignoreversion

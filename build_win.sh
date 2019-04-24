@@ -36,6 +36,7 @@ rm -f "Output/WifiTranslationHubsetup.exe"
 echo
 echo "Create installer"
 WINEPREFIX=$wine_prefix wine "$iscc_exe" wifitranslationhub_temp.iss
+echo "Executing : WINEPREFIX=$wine_prefix wine \"$iscc_exe\" wifitranslationhub_temp.iss"
 if [[ -f "Output/WifiTranslationHubsetup.exe" ]]; then
     echo "EXE written to Output/WifiTranslationHubsetup.exe"
 else
