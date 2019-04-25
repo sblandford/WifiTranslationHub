@@ -89,7 +89,7 @@ def listenUuid(channel):
     global timeStamp
     log().debug("Started UUID Channel %d thread", channel)
     # Create the datagram socket for receiving channel
-    ip_address: Union[Union[_BaseAddress, int], Any] = ipaddress.ip_address(config.MULTICAST_BASE_ADDR) + channel + config.MUTLICAST_UUID_OFFSET
+    ip_address = ipaddress.ip_address(config.MULTICAST_BASE_ADDR) + channel + config.MUTLICAST_UUID_OFFSET
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     if sys.platform == 'win32':
