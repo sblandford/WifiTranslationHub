@@ -47,6 +47,7 @@ import RTSPServer
 import MulticastRxUniTx
 import ClientUuidRx
 import Webserver
+import Watchdog
 from Log import log, log_init
 
 origHandler1 = False
@@ -96,6 +97,8 @@ def main():
 
     RTSPServer.runThread()
 
+    Watchdog.runThread(os.getpid())
+
     Webserver.start()
 
     os._exit(0)
@@ -111,12 +114,14 @@ def stopAll(signum, frame):
     signal.signal(signal.SIGTERM, origHandler4)
 
     ended = True
+    Watchdog.sigStopThread()
     IpBroadcaster.sigStopThread()
     Webserver.stop()
     RTSPServer.sigStopThread()
     MulticastRxUniTx.stopAll()
     ClientUuidRx.stopAll()
 
+    Watchdog.waitStopThread()
     IpBroadcaster.waitStopThread()
     RTSPServer.waitStopThread()
     MulticastRxUniTx.waitAll()

@@ -71,6 +71,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
         http.server.BaseHTTPRequestHandler.__init__(self, request, client_address, server)
         self.protocol_version = "HTTP/1.1"
 
+    def setup(self):
+        http.server.BaseHTTPRequestHandler.setup(self)
+        self.request.settimeout(config.REQUEST_TIMEOUT)
+
     def log_message(self, format, *args):
         # Filter out timeout and 200 messages
         for arg in args:

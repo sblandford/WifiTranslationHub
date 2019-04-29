@@ -110,7 +110,15 @@ if echo "$1" | grep -Eq "^[0-2]$"; then
   echo "Set number $setnum"
 fi
 
-for (( i=0; i<$MAX_CHANNELS; i++ )); do
+startchan=0
+if [[ "$1" == "relay" ]]; then
+    #Skip first channel
+    if [[ $MAX_CHANNELS -gt 1 ]]; then
+        startchan=1
+    fi
+fi
+
+for (( i=$startchan; i<$MAX_CHANNELS; i++ )); do
     send_audio $i $(( 432 + (i * 100) )) $(( i % 9 )) 1 &>/dev/null &
     send_audio $i $(( 864 + (i * 100) )) $(( i % 9 )) 0 &>/dev/null &
     send_uuid $i $setnum &>/dev/null &
