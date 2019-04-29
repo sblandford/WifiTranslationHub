@@ -7,7 +7,7 @@ import os
 import signal
 import threading
 import time
-import urllib
+import urllib.request
 import socket
 
 try:
