@@ -24,4 +24,7 @@ Run wifitranslationhub.py, or install Output/WifiTranslationHubsetup.exe, on the
 
 Go to http://localhost:8080/admin.html to see the admin interface. Then press the QR/URL button to discover the web address to use by devices to access the player.
 
+##### Important:
+It is _essential_ that the domain name "xlation.lan" resolves to the IP of the WifiTranslationHub server for the Android App to work with the hub. This may be set up in the DNS server settings local LAN gateway/router.
+
 See the docs folder for more information

@@ -38,7 +38,7 @@ Global coordinates and area where WAN access will be accepted. This enables rece
 This value is unlikely to change!
 
 ##### REQUIRED_HOSTNAME = "xlation.live"
-If a DNS query of this hostname matches the HUB_ACCESS_IP_ADDRESS then it is shown on the URL/QR code web page instead of just an IP address. The TLD must be one recognised as a URL by Android Chome otherwise it gets treated as a search expression.
+If a DNS query of this hostname matches the HUB_ACCESS_IP_ADDRESS then it is shown on the URL/QR code web page instead of just an IP address. The TLD must be one recognised as a URL by Android Chome otherwise it gets treated as a search expression. This is for the web player, the Android App will always look for "xlation.lan" regardless of this setting.
 
 ##### HUB_ACCESS_IP_ADDRESS = ""
 The IP address of the intended endpoint that user should connect to.
