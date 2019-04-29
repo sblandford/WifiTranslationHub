@@ -444,19 +444,20 @@ def reflectRTP(channel):
                     # been transposed by a NAT
                     # The client sending RTP
                     rtpOutPort = clientInfo['rtpOutSocket']
-                    rtpReady = select.select([rtpOutPort], [], [], 0)
-                    if rtpReady[0]:
-                        try:
-                            rtpData, rtpAddress = rtpOutPort.recvfrom(config.HUB_PACKET_BUFFER_SIZE)
-                        except Exception as e:
-                            log().error("Reading RTP packet failed on port : %s", rtpOutPort)
-                            log().error(e.message)
-                        else:
-                            newPort = rtpAddress[1]
-                            log().debug("Received RTP packet at port %d from port : %d", rtpOutPort.getsockname()[1], newPort)
-                            if newPort != clientInfo['clientport']:
-                                log().info("NAT traversal: Re-setting RTP client port from %d to %d", clientInfo['clientport'], newPort)
-                                clientInfo['clientport'] = newPort
+                    if rtpOutPort > 0:
+                        rtpReady = select.select([rtpOutPort], [], [], 0)
+                        if rtpReady[0]:
+                            try:
+                                rtpData, rtpAddress = rtpOutPort.recvfrom(config.HUB_PACKET_BUFFER_SIZE)
+                            except Exception as e:
+                                log().error("Reading RTP packet failed on port : %s", rtpOutPort)
+                                log().error(e.message)
+                            else:
+                                newPort = rtpAddress[1]
+                                log().debug("Received RTP packet at port %d from port : %d", rtpOutPort.getsockname()[1], newPort)
+                                if newPort != clientInfo['clientport']:
+                                    log().info("NAT traversal: Re-setting RTP client port from %d to %d", clientInfo['clientport'], newPort)
+                                    clientInfo['clientport'] = newPort
             seqPrev = seq
         except Exception as e:
             log().error(e.__doc__)
