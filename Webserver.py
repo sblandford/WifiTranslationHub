@@ -36,15 +36,15 @@ def start():
     while not ended:
         try:
             httpd = ServerClass(('', config.WEB_SERVER_PORT), HandlerClass)
+            httpd.timeout = config.SOCKET_TIMEOUT
         except:
             if not reported:
-                log().error("IpBroadcast : %s", sys.exc_info()[0])
+                log().error("Webserver : %s", sys.exc_info()[0])
             reported = True
             time.sleep(config.SOCKET_RETRY_SECONDS)
             pass
         else:
             break
-    httpd.timeout = config.SOCKET_TIMEOUT
 
     log().info ("Starting web server on port : %d", config.WEB_SERVER_PORT)
     ended = False
@@ -67,13 +67,9 @@ class ThreadingSimpleServer (socketserver.ThreadingMixIn, http.server.HTTPServer
 class Handler(http.server.BaseHTTPRequestHandler):
     def __init__(self, request, client_address, server):
         # Timeout causes Android to only partially load pages ??
-        # self.timeout = 30.0
+        # self.timeout = 3.0
         http.server.BaseHTTPRequestHandler.__init__(self, request, client_address, server)
         self.protocol_version = "HTTP/1.1"
-
-    def setup(self):
-        http.server.BaseHTTPRequestHandler.setup(self)
-        self.request.settimeout(config.REQUEST_TIMEOUT)
 
     def log_message(self, format, *args):
         # Filter out timeout and 200 messages
