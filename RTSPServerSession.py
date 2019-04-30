@@ -203,7 +203,7 @@ class HubServerSession:
                     break
             except Exception as e:
                 log().error(e.__doc__)
-                log().error(e.message)
+                log().error(str(e))
                 time.sleep(1)
         # At end of thread stop the client
         if 'sessionId' in self.rtspClient:

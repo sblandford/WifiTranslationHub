@@ -141,7 +141,7 @@ def listenUuid(channel):
                     channelDict['channels'][channel]['rx'][uuid] = time.time()
         except Exception as e:
             log().error(e.__doc__)
-            log().error(e.message)
+            log().error(str(e))
             time.sleep(1)
     sock.close()
 
@@ -169,6 +169,6 @@ def timeoutUuids():
                             del channelDict['channels'][channel]['rx'][uuid]
         except Exception as e:
             log().error(e.__doc__)
-            log().error(e.message)
+            log().error(str(e))
         time.sleep(1)
 

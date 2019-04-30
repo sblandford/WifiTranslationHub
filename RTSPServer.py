@@ -62,7 +62,7 @@ def server():
             RTSPServerSession.HubServerSession(clientInfo).runThread()
         except Exception as e:
             log().error(e.__doc__)
-            log().error(e.message)
+            log().error(str(e))
             time.sleep(1)
     hubTcpSocket.close()
 
