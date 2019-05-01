@@ -48,6 +48,10 @@ def broadcastIp():
     global ip
     global sock
 
+    serverPort = config.WEB_SERVER_PORT
+    if config.HUB_ACCESS_PORT > 0:
+        serverPort = config.HUB_ACCESS_PORT
+
     getIpStatus, ip = getIp()
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -57,7 +61,7 @@ def broadcastIp():
               config.HUB_LAN_PROTOCOL + ' ' + \
               config.REQUIRED_HOSTNAME + ' ' + \
               str(ip) + ' ' + \
-              str(config.WEB_SERVER_PORT)
+              str(serverPort)
     reported = False
     while not ended:
         try:
