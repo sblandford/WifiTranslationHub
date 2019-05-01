@@ -152,7 +152,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     if config.HTTP_TEST_ERROR_PERCENT > 0 and random.randint(0, 100) < config.HTTP_TEST_ERROR_PERCENT:
                         self._error(404, "No RTP packet available. Test-mode failure percentage is set to " + str(config.HTTP_TEST_ERROR_PERCENT), cache = False)
                     else:
-                        log().debug("RTP packet over HTTP requested by on channel: %d, seq: %d", channel, seq)
+                        log().debug("RTP packet over HTTP requested by %s on channel: %d, seq: %d", remoteIp, channel, seq)
                         contentType = "application/octet-stream"
                         binContent, cache = MulticastRxUniTx.getHttpRtpPacketSeq(channel, seq)
                         if binContent:
@@ -209,7 +209,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         contentType, encoding = mimetypes.guess_type(path)
         filePath = os.getcwd() + '/web/' + path
-        log().debug("Opening file : %s, type %s", filePath, contentType)
+        log().debug("Opening file for %s : %s, type %s", remoteIp, filePath, contentType)
         try:
             fsock = open(filePath, "rb")
         except IOError:
