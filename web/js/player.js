@@ -73,6 +73,7 @@ var gGeoLat = null;
 var gGeoLon = null;
 var gGeoInRange = false;
 var gOnLan = false;
+var gGotGeoInfo = false;
 var gStartAfterGeo = false;
 
 
@@ -144,7 +145,7 @@ function expireJSONP (name, script, errCallback, context) {
 //Poll status every two seconds
 function pollStatus () {
     //Quick polling until location known
-    if (!gOnLan && !gGeoLat) {
+    if (!gOnLan && !gGeoLat && gGotGeoInfo) {
         pollGeo ();
     }
     loadJSONP(
@@ -1002,7 +1003,9 @@ function getGeo () {
     });
 }
 function pollLanRange () {
-    pollGeo ();
+    if (gGotGeoInfo) {
+        pollGeo ();
+    }
     url = "/json/lanrange.json";
     if (gGeoLat) {
         url += "?lat=" + gGeoLat + "&lon=" + gGeoLon;
@@ -1018,6 +1021,7 @@ function pollLanRange () {
             if (langRangeStat.hasOwnProperty('inRange')) {
                 gGeoInRange = langRangeStat['inRange'];
             }
+            gGotGeoInfo = true;
             if ((onLanPrev != gOnLan) || (geoInRangePrev != gGeoInRange)) {
                 updateDisplay();
             }
