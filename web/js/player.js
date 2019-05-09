@@ -791,9 +791,9 @@ function clickEnact() {
     dAudio = document.getElementById('dummyAudio');
     if (gPlayIntention) {
         gPlayIntention = false;
-        if (mobileAndTabletcheck()) {
+        /* if (mobileAndTabletcheck()) {
             closeFullscreen();
-        }
+        } */
         console.log("Stop on clickEnact");
         stopPlayer();
         dAudio.onpause = null;
@@ -804,9 +804,9 @@ function clickEnact() {
         };
     } else {
         gPlayIntention = true;
-        if (mobileAndTabletcheck()) {
+        /* if (mobileAndTabletcheck()) {
             openFullscreen();
-        }
+        } */
         dAudio.onplay = null;
         dAudio.play();
         dAudio.onpause = function () {
