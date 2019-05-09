@@ -32,7 +32,13 @@ How long to wait for a thread to stop.
 ##### HUB_WAN_LOCATION_LATITUDE_DEGREES = 0.000
 ##### HUB_WAN_LOCATION_LONGITUDE_DEGREES = 0.000
 ##### HUB_WAN_LOCATION_RADIUS_METERS = 200
-Global coordinates and area where WAN access will be accepted. This enables reception of the HTTP player using "Mobile Data" as well as Wifi, if a public IP endpoint is provided, but limits access to the building. Obviously this is not a water-tight security system since any location information from the browser could potentially be manually injected so if privacy is really, really important then don't provide a public endpoint at all. Setting the location to 0.000,0.000 allows unrestricted access.
+##### HUB_WAN_LOCATION_IP_CHECK_RADIUS_METERS = 50000
+Global coordinates and area where WAN access will be accepted. This enables reception of the HTTP player using "Mobile Data" as well as Wifi, if a public IP endpoint is provided, but limits access to the building. Obviously this is not a water-tight security system since any location information from the browser could potentially be manually injected so if privacy is really, really important then don't provide a public endpoint at all.
+
+Setting HUB_WAN_LOCATION_RADIUS_METERS to zero disables the device's compass geolocation check.
+
+Setting HUB_WAN_LOCATION_IP_CHECK_RADIUS_METERS to zero disables ip-based geolocation check.
+
 
 ##### HUB_WAN_LOCATION_EARTH_RADIUS_METERS = 6371E3
 This value is unlikely to change!
@@ -191,3 +197,10 @@ Number of packets to keep in local cache before expiring
 ##### RTP_PAYLOAD_ID = 97
 ##### RTP_TOC_HEADER = 0xF0
 Standard RTP parameters
+
+##### WATCHDOG_POLL_TIME = 10
+  How many seconds between HTTP and RTSP checks
+##### WATCHDOG_FAILS_MAX = 2
+  Number of check failures before quitting program (assumes service manager such as systemd will restart it when this happens)
+##### WATCHDOG_FETCH_TIMEOUT = 2
+  Time out of HTTP or RTSP request before considering check to have failed
