@@ -74,6 +74,8 @@ var gGeoLon = null;
 var gGeoInRange = false;
 var gOnLan = false;
 var gStartAfterGeo = false;
+var gOnLanValid = false;
+var gGeoDeclined = false;
 
 
 //State
@@ -144,7 +146,7 @@ function expireJSONP (name, script, errCallback, context) {
 //Poll status every two seconds
 function pollStatus () {
     //Quick polling until location known
-    if (!gOnLan && !gGeoLat) {
+    if (gOnLanValid && !gOnLan && !gGeoLat) {
         pollGeo ();
     }
     loadJSONP(
@@ -232,7 +234,7 @@ function updateDisplay() {
             var chNameId = document.getElementById("chName");
             var startStopButtonId = document.getElementById("startStopButton");
             chNameId.innerHTML = name;
-            if (gOnLan || gGeoInRange || !gGeoLat) {
+            if (gOnLan || gGeoInRange || !gOnLanValid) {
                 if (status) {
                     if (chNameId.classList.contains('chNameDead')) {
                         chNameId.classList.remove('chNameDead');
@@ -852,19 +854,25 @@ function buttonStatus () {
 //setInterval(buttonStatus, 500);
 
 function startPlayer() {
-    gEnacting = true;
-    //Kill any existing players
-    console.log("Stop any existing");
-    stopPlayer();
-    console.log("Starting player");
-    gFutureHoldoffCount = 0;
-    //Do we need to get position
-    if (!gOnLan && !gGeoLat) {
-        var geoDiv = document.getElementById("geoBox");
-        gStartAfterGeo = true;
-        geoDiv.classList.add("geoShow");
-    } else {
-        startPlayer2();
+    if (!gStartAfterGeo && gOnLanValid) {
+        gEnacting = true;
+        //Kill any existing players
+        console.log("Stop any existing");
+        stopPlayer();
+        console.log("Starting player");
+        gFutureHoldoffCount = 0;
+        //Do we need to get position
+        if (!gOnLan && !gGeoLat) {
+            if (!gGeoDeclined) {
+                var geoDiv = document.getElementById("geoBox");
+                gStartAfterGeo = true;
+                geoDiv.classList.add("geoShow");
+            } else {
+                fullStopPlayer();
+            }
+        } else {
+            startPlayer2();
+        }
     }
 }
 
@@ -917,6 +925,7 @@ function fullStopPlayer () {
 
 function stopPlayer() {
     gEnacting = true;
+    gStartAfterGeo = false;
     
     console.log("Stopping player");
     
@@ -977,9 +986,10 @@ function pollGeo () {
     //Check if we have permissions and fetch if we don't already have
     if (navigator.permissions) {
         navigator.permissions.query({name: 'geolocation'}).then(function(PermissionStatus) {
-            if('granted' === PermissionStatus.state) {
+            if ('granted' === PermissionStatus.state) {
                 getGeo ();
             }
+            gGeoDeclined = ('denied' === PermissionStatus.state);
         });
     }
 }
@@ -999,6 +1009,12 @@ function getGeo () {
             gStartAfterGeo = false;
             startPlayer2();
         }
+    }, function(err) {
+        console.log("Geolocation: error code : " + err.code + ", " + err.message);
+        gStartAfterGeo = false;
+        gGeoDeclined = true;
+        fullStopPlayer();
+        updateDisplay();
     });
 }
 function pollLanRange () {
@@ -1012,15 +1028,17 @@ function pollLanRange () {
         function(langRangeStat) {
             var onLanPrev = gOnLan;
             var geoInRangePrev = gGeoInRange;
-            if (langRangeStat.hasOwnProperty('onLan')) {
+            /* if (langRangeStat.hasOwnProperty('onLan')) {
                 gOnLan = langRangeStat['onLan'];
-            }
+            } */ // TEST TEST
+            gOnLan = false; // TEST TEST
             if (langRangeStat.hasOwnProperty('inRange')) {
                 gGeoInRange = langRangeStat['inRange'];
             }
             if ((onLanPrev != gOnLan) || (geoInRangePrev != gGeoInRange)) {
                 updateDisplay();
             }
+            gOnLanValid = true;
         }
     );    
 }
@@ -1035,7 +1053,9 @@ function geoApprove() {
 }
 function geoDecline() {
     var geoDiv = document.getElementById("geoBox");
-    geoDiv.classList.remove("geoShow");    
+    geoDiv.classList.remove("geoShow");
+    fullStopPlayer();
+    updateDisplay();
 }
 
 //Start here
