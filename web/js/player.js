@@ -1028,10 +1028,9 @@ function pollLanRange () {
         function(langRangeStat) {
             var onLanPrev = gOnLan;
             var geoInRangePrev = gGeoInRange;
-            /* if (langRangeStat.hasOwnProperty('onLan')) {
+            if (langRangeStat.hasOwnProperty('onLan')) {
                 gOnLan = langRangeStat['onLan'];
-            } */ // TEST TEST
-            gOnLan = false; // TEST TEST
+            }
             if (langRangeStat.hasOwnProperty('inRange')) {
                 gGeoInRange = langRangeStat['inRange'];
             }
