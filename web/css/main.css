@@ -111,8 +111,8 @@ tr.stat {
     height:3em;
 }
 div.stat {
-    display : none;
-    font-family: monospace;
+    /* display : none; */
+    /* font-family: monospace; */
 }
 
 
@@ -133,6 +133,9 @@ div.stat {
 /* Start/stop button on hover & focus */
 .startStopBtn:active {
     background-color: #2980B9;
+}
+.startStopBtn:disabled {
+    color: GrayText;
 }
 
 

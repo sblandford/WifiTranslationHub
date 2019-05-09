@@ -7,7 +7,19 @@ var LANG = {
         "geoText" : "Permission is required to check your location",
         "geoYes" : "Confirm",
         "geoNo" : "Decline",
-        "outRange" : "Out of range"
+        "outRange" : "Out of range",
+        "geoDeclined" : "Use WiFi at Venue"
+    },
+    "de" : {
+        "select" : "Wählen",
+        "channel": "Kanal",
+        "start" : "Start",
+        "stop" : "Halt",
+        "geoText" : "Zur Überprüfung Ihres Standorts ist eine Erlaubnis erforderlich",
+        "geoYes" : "Bestätigen",
+        "geoNo" : "Ablehnen",
+        "outRange" : "Außer Reichweite",
+        "geoDeclined" : "Nutzen Sie WiFi am Veranstaltungsort"
     },
     "es" : {
         "select" : "Seleccionar",
@@ -17,7 +29,8 @@ var LANG = {
         "geoText" : "Se requiere permiso para verificar su ubicación",
         "geoYes" : "Aceptar",
         "geoNo" : "Disminución",
-        "outRange" : "Fuera de rango"
+        "outRange" : "Fuera de rango",
+        "geoDeclined" : "Usa WiFi en el lugar"
     },
     "fr" : {
         "select" : "Sélectionnez",
@@ -27,7 +40,8 @@ var LANG = {
         "geoText" : "Une permission est requise pour vérifier votre emplacement",
         "geoYes" : "Acceptez",
         "geoNo" : "Déclin",
-        "outRange" : "Hors de portée"
+        "outRange" : "Hors de portée",
+        "geoDeclined" : "Utiliser le WiFi sur le lieu"
     },
     "hi" : {
         "select" : "चुनते हैं",
@@ -37,7 +51,8 @@ var LANG = {
         "geoText" : "आपके स्थान की जांच करने के लिए अनुमति की आवश्यकता है",
         "geoYes" : "स्वीकार करना",
         "geoNo" : "पतन",
-        "outRange" : "क्षेत्र के बहार"
+        "outRange" : "क्षेत्र के बहार",
+        "geoDeclined" : "वेन्यू पर वाईफाई का उपयोग करें"
     },
     "nl" : {
         "select" : "Kiezen",
@@ -47,7 +62,8 @@ var LANG = {
         "geoText" : "Toestemming is vereist om uw locatie te controleren",
         "geoYes" : "Aanvaarden",
         "geoNo" : "Afwijzen",
-        "outRange" : "Buiten bereik"
+        "outRange" : "Buiten bereik",
+        "geoDeclined" : "Gebruik WiFi op locatie"
     },
     "pl" : {
         "select" : "Wybierz",
@@ -57,7 +73,8 @@ var LANG = {
         "geoText" : "Do sprawdzenia Twojej lokalizacji potrzebne jest pozwolenie",
         "geoYes" : "Zaakceptować",
         "geoNo" : "Upadek",
-        "outRange" : "Poza zakresem"
+        "outRange" : "Poza zakresem",
+        "geoDeclined" : "Użyj WiFi w Venue"
     },
     "pt" : {
         "select" : "Selecione",
@@ -67,7 +84,8 @@ var LANG = {
         "geoText" : "A permissão é necessária para verificar sua localização",
         "geoYes" : "Aceitar",
         "geoNo" : "Declínio",
-        "outRange" : "Fora de alcance"
+        "outRange" : "Fora de alcance",
+        "geoDeclined" : "Use WiFi no local"
     },
     "ta" : {
         "select" : "தேர்வு",
@@ -77,7 +95,8 @@ var LANG = {
         "geoText" : "உங்கள் இருப்பிடத்தைச் சரிபார்க்க அனுமதி தேவை",
         "geoYes" : "ஏற்கவும்",
         "geoNo" : "சரிவு",
-        "outRange" : "வரம்புக்கு வெளியே"
+        "outRange" : "வரம்புக்கு வெளியே",
+        "geoDeclined" : "இடத்தில் WiFi ஐப் பயன்படுத்துக"
     }  
 }
 

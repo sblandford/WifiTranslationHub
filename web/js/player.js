@@ -76,6 +76,7 @@ var gOnLan = false;
 var gStartAfterGeo = false;
 var gOnLanValid = false;
 var gGeoDeclined = false;
+var gGeoStart2 = false;
 
 
 //State
@@ -234,23 +235,23 @@ function updateDisplay() {
             var chNameId = document.getElementById("chName");
             var startStopButtonId = document.getElementById("startStopButton");
             chNameId.innerHTML = name;
-            if (gOnLan || gGeoInRange || !gOnLanValid) {
-                if (status) {
-                    if (chNameId.classList.contains('chNameDead')) {
-                        chNameId.classList.remove('chNameDead');
-                    }
-                    startStopButtonId.innerText = LANG[gLang][(gPlayIntention)?"stop":"start"];
-                    startStopButtonId.disabled = false;
-                } else {
-                    if (!chNameId.classList.contains('chNameDead')) {
-                        chNameId.classList.add('chNameDead');
-                    }
-                    startStopButtonId.innerText = (gPlayIntention)?LANG[gLang]["stop"]:"-";
-                    startStopButtonId.disabled = !gPlayIntention;
+            if (status && (gOnLan || gGeoInRange || !gOnLanValid || (!gGeoLat && !gGeoDeclined))) {
+                if (chNameId.classList.contains('chNameDead')) {
+                    chNameId.classList.remove('chNameDead');
                 }
+                startStopButtonId.innerText = LANG[gLang][(gPlayIntention)?"stop":"start"];
+                startStopButtonId.disabled = false;
             } else {
-                startStopButtonId.innerText = LANG[gLang]["outRange"];
-                startStopButtonId.disabled = true;
+                if (!chNameId.classList.contains('chNameDead')) {
+                    chNameId.classList.add('chNameDead');
+                }
+                startStopButtonId.innerText = (gPlayIntention)?LANG[gLang]["stop"]:"Start";
+                startStopButtonId.disabled = !gPlayIntention;
+            }
+            if (!gOnLan && !gGeoInRange && gOnLanValid && (gGeoLat || gGeoDeclined)) {
+                document.getElementById("stat").innerText = (gGeoDeclined)?LANG[gLang]["geoDeclined"]:LANG[gLang]["outRange"];
+            } else {
+                document.getElementById("stat").innerText = "";
             }
         }
     }
@@ -683,7 +684,7 @@ function playPcm(samples, timeRtp) {
                 timeMargin += gFutureIncrement;
             }*/
             
-            document.getElementById("stat").innerText = timeMargin.toFixed(2);;
+            //document.getElementById("stat").innerText = timeMargin.toFixed(2);;
             
             playPcm.buffer = new Float32Array(0);
         }
@@ -876,7 +877,7 @@ function startPlayer() {
     }
 }
 
-function startPlayer2 () {
+function startPlayer2 () {    
     gPlaying = true;
     if (!gCtx) {
         gCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1003,11 +1004,10 @@ function getGeo () {
         gGeoLon = geoposition.coords.longitude;
         if (triggerPoll) {
             pollLanRange();
-            updateDisplay();
         }
         if (gStartAfterGeo) {
             gStartAfterGeo = false;
-            startPlayer2();
+            gGeoStart2 = true;
         }
     }, function(err) {
         console.log("Geolocation: error code : " + err.code + ", " + err.message);
@@ -1034,10 +1034,24 @@ function pollLanRange () {
             if (langRangeStat.hasOwnProperty('inRange')) {
                 gGeoInRange = langRangeStat['inRange'];
             }
-            if ((onLanPrev != gOnLan) || (geoInRangePrev != gGeoInRange)) {
+            //gGeoInRange = false; gOnLan = false;  // TEST TEST
+
+            
+            
+            if ((onLanPrev != gOnLan) || (geoInRangePrev != gGeoInRange) || !gOnLanValid) {
+                gOnLanValid = true;
                 updateDisplay();
             }
             gOnLanValid = true;
+            if (gGeoStart2) {
+                gGeoStart2 = false;
+                if (gGeoInRange) {
+                    startPlayer2();
+                } else {
+                    fullStopPlayer();
+                    updateDisplay();
+                }
+            }
         }
     );    
 }
@@ -1088,4 +1102,5 @@ window.onload = function () {
     pollStatus();
     setInterval(pollStatus, 2000);
     setInterval(pollLanRange, 120000);
+    setInterval(updateDisplay, 10000);
 }
