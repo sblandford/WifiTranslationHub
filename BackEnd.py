@@ -16,9 +16,13 @@ import threading
 import MulticastRxUniTx
 import IpBroadcaster
 
+import urllib.request
+import json
+
 lock = None
 privChannelDict = None
 channelDict = None
+ipLocationDict = {}
 
 
 def importLocks(lockIn, privChannelDictIn):
@@ -231,9 +235,9 @@ def hash(s):
 
 
 # Calculate distance from venue centre from coordinates and return in range or not
-def inRange(lat, lon):
+def inRange(lat, lon, range):
     # If no range specified then range testing is disabled
-    if config.HUB_WAN_LOCATION_RADIUS_METERS == 0:
+    if range == 0:
         return True
 
     radLat = math.radians(lat)
@@ -246,9 +250,9 @@ def inRange(lat, lon):
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     d = config.HUB_WAN_LOCATION_EARTH_RADIUS_METERS * c
 
-    if config.HUB_WAN_LOCATION_RADIUS_METERS <= d:
-        log().info("Attempt to connect from client %f meters away", d)
-    return (config.HUB_WAN_LOCATION_RADIUS_METERS > d)
+    if range <= d:
+        log().info("Attempt to connect from client %f meters away outside limit of %f meters", d, range)
+    return (range > d)
 
 
 def checkRange(params):
@@ -263,13 +267,55 @@ def checkRange(params):
             problem = "Malformed co-ordinates"
             return code, problem
         else:
-            if not inRange(lat, lon):
+            if not inRange(lat, lon, config.HUB_WAN_LOCATION_RADIUS_METERS):
                 code = 403
                 problem = "Client out of range of venue"
     else:
         code = 403
         problem = "Unable to assess if client is at venue"
     return code, problem
+
+def findIpLocationThread(ip):
+    global ipLocationDict
+
+    # Try geolocation service
+    try:
+        url = "http://ipinfo.io/" + ip + "/geo"
+        req = urllib.request.Request(url)
+        r = urllib.request.urlopen(req).read()
+        cont = json.loads(r.decode('utf-8'))
+    except Exception as e:
+        log().warning("Unable to locate IP for %s", ip)
+        log().warning(str(e))
+    else:
+        if 'loc' in cont and len(cont['loc'].split(",")) > 1:
+            lat = float(cont['loc'].split(",")[0])
+            lon = float(cont['loc'].split(",")[1])
+            rangeOk = inRange(lat, lon, config.HUB_WAN_LOCATION_IP_CHECK_RADIUS_METERS)
+            log().info("IP %s in range : %r", ip, rangeOk)
+            ipLocationDict[ip] = rangeOk
+        else:
+            log().warning("Unable to find Location field, 'loc' for %s", ip)
+            ipLocationDict[ip] = False
+
+def checkIpLocationRange(ips):
+    global ipLocationDict
+
+    #Pass everything if not checking
+    if config.HUB_WAN_LOCATION_IP_CHECK_RADIUS_METERS == 0:
+        return True
+
+    ip = getSingleIp(ips)
+
+    if ip in ipLocationDict:
+        return ipLocationDict[ip]
+    else:
+        # Innocent until proven guilty
+        ipLocationDict[ip] = True
+
+        ipLocationThread = threading.Thread(target = findIpLocationThread, args = (ip,))
+        ipLocationThread.start()
+        return True
 
 def isLan(ips):
     ip = getSingleIp(ips)

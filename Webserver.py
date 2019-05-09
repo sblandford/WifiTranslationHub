@@ -134,6 +134,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return
 
         onLan = BackEnd.isLan(remoteIp)
+        # Register if remote IP is in range
+        if not onLan and not BackEnd.checkIpLocationRange(remoteIp):
+            self._error(403, "IP location out of range")
+            return
 
         if channel >= 0:
             if '/rtp/' in path:
