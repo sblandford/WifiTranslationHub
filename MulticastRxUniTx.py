@@ -98,6 +98,8 @@ def addHttpClientIfNot(clientInfo, onLan):
             foundUuid = True
             if not uuid in channelDict['channels'][channel]['httpLanSessions'] and not uuid in channelDict['channels'][channel]['httpWanSessions']:
                 channelChanged = True
+        else:
+            clientInfo['firstTime'] = calendar.timegm(time.gmtime())
     if channelChanged:
         log().debug("Detected channel change for uuid : %s", uuid)
         removeHttpClient(uuid)
