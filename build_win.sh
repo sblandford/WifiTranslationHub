@@ -10,6 +10,11 @@ if ! which wine; then
     exit 1
 fi
 
+if [[ ! -f "nssm.exe" ]]; then
+    echo "Latest (Win 10 compatible) 32 bit version of nssm.exe must be present in $( dirname "$( readlink -f $0 )" )"
+    exit 1
+fi
+
 sed -r "s|_PWD_|$( dirname "$( readlink -f "$0" )" )|g;s|\/|\\\|g" wifitranslationhub.iss >wifitranslationhub_temp.iss
 
 echo
