@@ -87,14 +87,14 @@ Source: "Z:_PWD_\dist\windows\wifitranslationhub\nssm.exe"; DestDir: "{app}"; Fl
 Source: "Z:_PWD_\dist\windows\wifitranslationhub\config_dist.py"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Z:_PWD_\dist\windows\wifitranslationhub\pyexpat.pyd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Z:_PWD_\dist\windows\wifitranslationhub\python36.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:_PWD_\dist\windows\wifitranslationhub\pywintypes36.dll"; DestDir: "{app}"; Flags: ignoreversion
+;Source: "Z:_PWD_\dist\windows\wifitranslationhub\pywintypes36.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Z:_PWD_\dist\windows\wifitranslationhub\select.pyd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Z:_PWD_\dist\windows\wifitranslationhub\ucrtbase.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Z:_PWD_\dist\windows\wifitranslationhub\unicodedata.pyd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Z:_PWD_\dist\windows\wifitranslationhub\VCRUNTIME140.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Z:_PWD_\dist\windows\wifitranslationhub\wifitranslationhub.exe.manifest"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:_PWD_\dist\windows\wifitranslationhub\win32api.pyd"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Z:_PWD_\dist\windows\wifitranslationhub\win32evtlog.pyd"; DestDir: "{app}"; Flags: ignoreversion
+;Source: "Z:_PWD_\dist\windows\wifitranslationhub\win32api.pyd"; DestDir: "{app}"; Flags: ignoreversion
+;Source: "Z:_PWD_\dist\windows\wifitranslationhub\win32evtlog.pyd"; DestDir: "{app}"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]

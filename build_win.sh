@@ -16,8 +16,9 @@ echo
 echo "Compiling"
 docker run --rm -v "$(pwd):/src/" cdrx/pyinstaller-windows:python3
 echo
-echo "Inserting app version"
-sed -i -r "s/#define\s+WifiXlationAppVersion .*/#define WifiXlationAppVersion \"$( grep -E "version[[:space:]]*=" setup.py | grep -Eo "[0-9.]+"  )\"/" wifitranslationhub_temp.iss
+version=$( grep -E "version[[:space:]]*=" setup.py | grep -Eo "[0-9.]+"  )
+echo "Inserting app version $version"
+sed -i -r "s/#define\s+WifiXlationAppVersion .*/#define WifiXlationAppVersion \"$version\"/" wifitranslationhub_temp.iss
 
 echo
 echo "Find Inno Setup"
@@ -38,7 +39,8 @@ echo "Create installer"
 WINEPREFIX=$wine_prefix wine "$iscc_exe" wifitranslationhub_temp.iss
 echo "Executing : WINEPREFIX=$wine_prefix wine \"$iscc_exe\" wifitranslationhub_temp.iss"
 if [[ -f "Output/WifiTranslationHubsetup.exe" ]]; then
-    echo "EXE written to Output/WifiTranslationHubsetup.exe"
+    mv "Output/WifiTranslationHubsetup.exe" "Output/WifiTranslationHubsetup_$version.exe"
+    echo "EXE written to Output/WifiTranslationHubsetup_$version.exe"
 else
     echo "Expect output file, Output/WifiTranslationHubsetup.exe not found"
 fi

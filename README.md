@@ -20,7 +20,7 @@ The http system of sending the audio is designed to be cache-friendly to reduce 
 
 ## How to use
 
-Run wifitranslationhub.py, or install Output/WifiTranslationHubsetup.exe, on the same LAN as the WifiTranslation multicast.
+Run wifitranslationhub.py, or install the Windows EXE and install from https://drive.google.com/drive/folders/1_LKzzSyZvYat5LHyWHS8v3t7mr4nhaLv?usp=sharing on the same LAN as the WifiTranslation multicast.
 
 Go to http://localhost:8080/admin.html to see the admin interface. Then press the QR/URL button to discover the web address to use by devices to access the player.
 
