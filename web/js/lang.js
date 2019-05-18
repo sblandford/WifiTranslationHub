@@ -83,7 +83,7 @@ var LANG = {
         "stop" : "Pare",
         "geoText" : "A permissão é necessária para verificar sua localização",
         "geoYes" : "Aceitar",
-        "geoNo" : "Declínio",
+        "geoNo" : "Negar",
         "outRange" : "Fora de alcance",
         "geoDeclined" : "Use WiFi no local"
     },

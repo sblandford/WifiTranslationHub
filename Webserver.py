@@ -223,7 +223,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             binContent = bytearray(fsock.read())
             fsock.close()
             # Disable Android app download if index file and config set. So all clients use web app only.
-            if isIndex and not config.QR_CODE_INCLUDE_ANDROID_APP:
+            if isIndex and (not onLan or not config.QR_CODE_INCLUDE_ANDROID_APP):
                 binContent = binContent.replace(b"includeApp = true", b"includeApp = false")
             self._respond(contentType, binContent, config.HTTP_WEB_CACHE_SECONDS)
 
