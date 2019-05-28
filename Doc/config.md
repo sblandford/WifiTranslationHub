@@ -1,7 +1,7 @@
 # WifiTranslationHub Configuration
 
 ## config.py
-To change the configuration copy config_dist.py to config.py in the same directory. The Hub will then load config.py instead of config_dist.py.
+To change the configuration copy config_dist.py to config.py in the same directory. The Hub will then load config.py instead of config_dist.py. On Windows, the directory in which config_dist.py is found will be C:\Programs Files (x86)\Wifi Translation Hub.
 
 ### Config parameters and defaults
 
