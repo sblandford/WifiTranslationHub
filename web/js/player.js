@@ -250,7 +250,7 @@ function updateDisplay() {
             }
             if (!gOnLan && !gGeoInRange && gOnLanValid && (gGeoLat || gGeoDeclined)) {
                 document.getElementById("stat").innerText = LANG[gLang][(gGeoDeclined)?"geoDeclined":"outRange"];
-                if (!geoDeclined) {
+                if (!gGeoDeclined) {
                     startStopButtonId.innerText = LANG[gLang]["retry"];
                     startStopButtonId.disabled = false;
                 }
