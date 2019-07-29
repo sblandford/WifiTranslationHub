@@ -793,6 +793,7 @@ function ontouchendChannel(channel) {
 // The main start/stop button handler
 function clickEnact() {
     //Check if retry pressed
+    var startStopButtonId = document.getElementById("startStopButton");
     if (startStopButtonId.innerText == LANG[gLang]["retry"]) {
         location.reload(true);
     }
