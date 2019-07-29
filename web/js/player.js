@@ -245,11 +245,11 @@ function updateDisplay() {
                 if (!chNameId.classList.contains('chNameDead')) {
                     chNameId.classList.add('chNameDead');
                 }
-                startStopButtonId.innerText = (gPlayIntention)?LANG[gLang]["stop"]:"Start";
+                startStopButtonId.innerText = LANG[gLang][(gPlayIntention)?"stop":"start"];
                 startStopButtonId.disabled = !gPlayIntention;
             }
             if (!gOnLan && !gGeoInRange && gOnLanValid && (gGeoLat || gGeoDeclined)) {
-                document.getElementById("stat").innerText = (gGeoDeclined)?LANG[gLang]["geoDeclined"]:LANG[gLang]["outRange"];
+                document.getElementById("stat").innerText = LANG[gLang][(gGeoDeclined)?"geoDeclined":"outRange"];
                 if (!geoDeclined) {
                     startStopButtonId.innerText = LANG[gLang]["retry"];
                     startStopButtonId.disabled = false;
