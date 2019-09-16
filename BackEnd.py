@@ -300,7 +300,7 @@ def findIpLocationThread(ip):
 
 def checkIpLocationRange(ips):
     global ipLocationDict
-
+    
     #Pass everything if not checking
     if config.HUB_WAN_LOCATION_IP_CHECK_RADIUS_METERS == 0:
         return True
@@ -332,11 +332,15 @@ def rewritable(ips):
     ip = getSingleIp(ips)
     return ip in config.HUB_REWRITE_TO_LAN_URL
 
-# First IP is the one we want
+# First IPv4 is the one we want
 def getSingleIp(ips):
     ip = ips
     if len(ips.split(",")) > 1:
-        ip = ips.split(",")[0]
+        ip = re.search("([0-9]{1,3}\.){3}[0-9]{1,3}",ips.split(",")[0])
+        if ip == None:
+            return ips.split(",")[0]
+        else:
+            ip = ip.group(0)
     return ip
 
 def linkAddress():
