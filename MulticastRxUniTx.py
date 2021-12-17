@@ -349,6 +349,10 @@ def reflectRTP(channel):
     ip_address = ipaddress.ip_address(config.MULTICAST_BASE_ADDR) + channel + config.MUTLICAST_MANAGEMENT_OFFSET
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    # If a specific IP is defined for this hub then listen on that
+    if len(config.HUB_ACCESS_IP_ADDRESS) > 0:
+        packedAddress = struct.pack('4s4s', socket.inet_aton(str(ip_address)), socket.inet_aton(config.HUB_ACCESS_IP_ADDRESS))
+        sock.setsockopt(socket.SOL_IP, socket.IP_ADD_MEMBERSHIP, packedAddress)    
     if sys.platform == 'win32':
         sock.bind(("", config.MULTICAST_PORT))
     else:

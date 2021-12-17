@@ -10,6 +10,7 @@ except ImportError:
 import random
 import re
 import socket
+import struct
 import sys
 import threading
 import time
@@ -55,6 +56,7 @@ def broadcastIp():
     getIpStatus, ip = getIp()
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock.bind((ip,config.IP_BROADCAST_PORT))
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     # Broadcast the following information: protocol, hostname, ip address, web server access port
     message = config.HUB_WAN_PROTOCOL + ' ' + \
