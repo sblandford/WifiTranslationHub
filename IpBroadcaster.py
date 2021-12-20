@@ -103,6 +103,9 @@ def getIp():
             return True, ip
     else:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        if len(config.HUB_ACCESS_INTERFACE) > 0:
+            log().info('Our main interface is ' + config.HUB_ACCESS_INTERFACE);
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_BINDTODEVICE, config.HUB_ACCESS_INTERFACE.encode('utf-8'))        
         try:
             # doesn't even have to be reachable
             s.connect(('10.255.255.255', 1))
