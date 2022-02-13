@@ -347,14 +347,49 @@ def reflectRTP(channel):
     seqPrev = 0
     # Create the datagram socket for receiving channel
     ip_address = ipaddress.ip_address(config.MULTICAST_BASE_ADDR) + channel + config.MUTLICAST_MANAGEMENT_OFFSET
+    group = socket.inet_aton(str(ip_address))
+    
+    mreq = struct.pack("4sL", group, socket.INADDR_ANY)
+    # If a specific IP is defined for this hub then listen on that
+    if len(config.HUB_ACCESS_IP_ADDRESS) > 0:
+        mreq = struct.pack('4s4s', socket.inet_aton(str(ip_address)), socket.inet_aton(config.HUB_ACCESS_IP_ADDRESS))    
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    # If a specific interfcae is defined for this hub then listen on that
+    if len(config.HUB_ACCESS_INTERFACE) > 0:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BINDTODEVICE, config.HUB_ACCESS_INTERFACE.encode('utf-8'))
     if sys.platform == 'win32':
         sock.bind(("", config.MULTICAST_PORT))
     else:
         sock.bind((str(ip_address), config.MULTICAST_PORT))
-    group = socket.inet_aton(str(ip_address))
-    mreq = struct.pack("4sL", group, socket.INADDR_ANY)
+        
+    # Set up second device listener if defined
+    if len(config.ip2) > 0:
+        mreq2 = struct.pack("4sL", group, socket.INADDR_ANY)
+        # If a specific IP is defined for this hub then listen on that
+        if len(config.HUB_ACCESS_IP_ADDRESS) > 0:
+            mreq2 = struct.pack('4s4s', socket.inet_aton(str(ip_address)), socket.inet_aton(config.ip2))          
+        sock2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        sock2.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock2.setsockopt(socket.SOL_SOCKET, socket.SO_BINDTODEVICE, config.HUB_ACCESS_INTERFACE2.encode('utf-8'))
+        if sys.platform == 'win32':
+            sock2.bind(("", config.MULTICAST_PORT))
+        else:
+            sock2.bind((str(ip_address), config.MULTICAST_PORT))
+        reported = False
+        while not privChannelDict['channels'][channel]['ended']:
+            try:
+                sock2.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq2)
+            except:
+                if not reported:
+                    log().error("MulticastRxUniTx setup on %s : %s", config.ip2, sys.exc_info()[0])
+                reported = True
+                time.sleep(config.SOCKET_RETRY_SECONDS)
+                pass
+            else:
+                break
+        sock2.settimeout(config.SOCKET_TIMEOUT)        
+        
     # TODO Trap network error here
     reported = False
     while not privChannelDict['channels'][channel]['ended']:
@@ -362,7 +397,7 @@ def reflectRTP(channel):
             sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
         except:
             if not reported:
-                log().error("IpBroadcast : %s", sys.exc_info()[0])
+                log().error("MulticastRxUniTx : %s", sys.exc_info()[0])
             reported = True
             time.sleep(config.SOCKET_RETRY_SECONDS)
             pass
@@ -370,13 +405,27 @@ def reflectRTP(channel):
             break
     sock.settimeout(config.SOCKET_TIMEOUT)
     log().debug("Waiting for multicast packets on channel %d, address %s", channel, str(ip_address))
+    sockOK = False
+    sock2OK = False    
     while not privChannelDict['channels'][channel]['ended']:
         try:
             timeout = False
-            try:
-                data, address = sock.recvfrom(config.MULTICAST_PACKET_BUFFER_SIZE)
-            except socket.timeout:
-                timeout = True
+            if sock2OK == False:
+                try:
+                    data, address = sock.recvfrom(config.MULTICAST_PACKET_BUFFER_SIZE)
+                except socket.timeout:
+                    sockOK = False
+                    timeout = True
+                else:
+                    sockOK = True
+            if sockOK == False:
+                try:
+                    data, address = sock2.recvfrom(config.MULTICAST_PACKET_BUFFER_SIZE)
+                except socket.timeout:
+                    sock2OK = False
+                    timeout = True
+                else:
+                    sock2OK = True
             if timeout:
                 log().debug("Timeout on channel %s", channel)
                 with privChannelDict['channels'][channel]['lock']:

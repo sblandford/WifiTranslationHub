@@ -10,6 +10,7 @@ except ImportError:
 import random
 import re
 import socket
+import struct
 import sys
 import threading
 import time
@@ -55,6 +56,10 @@ def broadcastIp():
     getIpStatus, ip = getIp()
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    # If a specific interfcae is defined for this hub then listen on that
+    if len(config.HUB_ACCESS_INTERFACE) > 0:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BINDTODEVICE, config.HUB_ACCESS_INTERFACE.encode('utf-8'))    
+    sock.bind((ip,config.IP_BROADCAST_PORT))
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     # Broadcast the following information: protocol, hostname, ip address, web server access port
     message = config.HUB_WAN_PROTOCOL + ' ' + \
@@ -98,6 +103,9 @@ def getIp():
             return True, ip
     else:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        if len(config.HUB_ACCESS_INTERFACE) > 0:
+            log().info('Our main interface is ' + config.HUB_ACCESS_INTERFACE);
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_BINDTODEVICE, config.HUB_ACCESS_INTERFACE.encode('utf-8'))        
         try:
             # doesn't even have to be reachable
             s.connect(('10.255.255.255', 1))

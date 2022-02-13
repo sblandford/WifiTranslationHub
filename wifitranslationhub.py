@@ -37,6 +37,7 @@ import json
 import pickle
 import os
 import signal
+import socket
 import sys
 import threading
 import time
@@ -92,6 +93,7 @@ def main():
 
     configThread.start()
     IpBroadcaster.runThread()
+    getIp2()
     MulticastRxUniTx.startAll(channelDict, channelStatDict)
     ClientUuidRx.startAll(channelDict, channelStatDict)
 
@@ -207,6 +209,24 @@ def updateConfig(appdata):
                 IpBroadcaster.broadcastChangeAlert()
 
         time.sleep(config.CONFIG_UPDATE_SECONDS)
+
+def getIp2():
+    ip = ""
+    if len(config.HUB_ACCESS_INTERFACE2) > 0:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        log().info('Our secondary interface is ' + config.HUB_ACCESS_INTERFACE2);
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_BINDTODEVICE, config.HUB_ACCESS_INTERFACE2.encode('utf-8'))        
+        try:
+            # doesn't even have to be reachable
+            s.connect(('10.255.255.255', 1))
+            ip = s.getsockname()[0]
+            log().info('Our secondary IP is ' + ip);
+        except:
+            log().warning("Unable to determine secondary local IP address")
+            return False, "127.0.0.1"
+        finally:
+            s.close()
+    config.ip2 = ip
 
 # Program Start Point
 if __name__ == "__main__":

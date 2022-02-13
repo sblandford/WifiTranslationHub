@@ -8,7 +8,8 @@ var LANG = {
         "geoYes" : "Confirm",
         "geoNo" : "Decline",
         "outRange" : "Out of range",
-        "geoDeclined" : "Use WiFi at Venue"
+        "geoDeclined" : "Use WiFi at Venue",
+        "retry" : "Retry"
     },
     "de" : {
         "select" : "Wählen",
@@ -19,7 +20,8 @@ var LANG = {
         "geoYes" : "Bestätigen",
         "geoNo" : "Ablehnen",
         "outRange" : "Außer Reichweite",
-        "geoDeclined" : "Nutzen Sie WiFi am Veranstaltungsort"
+        "geoDeclined" : "Nutzen Sie WiFi am Veranstaltungsort",
+        "retry" : "Wiederholen"
     },
     "es" : {
         "select" : "Seleccionar",
@@ -30,7 +32,8 @@ var LANG = {
         "geoYes" : "Aceptar",
         "geoNo" : "Disminución",
         "outRange" : "Fuera de rango",
-        "geoDeclined" : "Usa WiFi en el lugar"
+        "geoDeclined" : "Usa WiFi en el lugar",
+        "retry" : "Procesar de nuevo"
     },
     "fr" : {
         "select" : "Sélectionnez",
@@ -41,7 +44,8 @@ var LANG = {
         "geoYes" : "Acceptez",
         "geoNo" : "Déclin",
         "outRange" : "Hors de portée",
-        "geoDeclined" : "Utiliser le WiFi sur le lieu"
+        "geoDeclined" : "Utiliser le WiFi sur le lieu",
+        "retry" : "Réessayez"
     },
     "hi" : {
         "select" : "चुनते हैं",
@@ -52,7 +56,8 @@ var LANG = {
         "geoYes" : "स्वीकार करना",
         "geoNo" : "पतन",
         "outRange" : "क्षेत्र के बहार",
-        "geoDeclined" : "वेन्यू पर वाईफाई का उपयोग करें"
+        "geoDeclined" : "वेन्यू पर वाईफाई का उपयोग करें",
+        "retry" : "पुन: प्रयास करें"
     },
     "nl" : {
         "select" : "Kiezen",
@@ -63,7 +68,8 @@ var LANG = {
         "geoYes" : "Aanvaarden",
         "geoNo" : "Afwijzen",
         "outRange" : "Buiten bereik",
-        "geoDeclined" : "Gebruik WiFi op locatie"
+        "geoDeclined" : "Gebruik WiFi op locatie",
+        "retry" : "Opnieuw proberen"
     },
     "pl" : {
         "select" : "Wybierz",
@@ -74,7 +80,8 @@ var LANG = {
         "geoYes" : "Zaakceptować",
         "geoNo" : "Upadek",
         "outRange" : "Poza zakresem",
-        "geoDeclined" : "Użyj WiFi w Venue"
+        "geoDeclined" : "Użyj WiFi w Venue",
+        "retry" : "Spróbować ponownie"
     },
     "pt" : {
         "select" : "Selecione",
@@ -85,7 +92,8 @@ var LANG = {
         "geoYes" : "Aceitar",
         "geoNo" : "Negar",
         "outRange" : "Fora de alcance",
-        "geoDeclined" : "Use WiFi no local"
+        "geoDeclined" : "Use WiFi no local",
+        "retry" : "Tente novamente"
     },
     "ta" : {
         "select" : "தேர்வு",
@@ -96,7 +104,8 @@ var LANG = {
         "geoYes" : "ஏற்கவும்",
         "geoNo" : "சரிவு",
         "outRange" : "வரம்புக்கு வெளியே",
-        "geoDeclined" : "இடத்தில் WiFi ஐப் பயன்படுத்துக"
+        "geoDeclined" : "இடத்தில் WiFi ஐப் பயன்படுத்துக",
+        "retry" : "மீண்டும் முயற்சி செய்"
     },
     "ru" : {
         "select" : "Выбрать",
@@ -107,7 +116,8 @@ var LANG = {
         "geoYes" : "подтвердить",
         "geoNo" : "снижение",
         "outRange" : "Вне зоны доступа",
-        "geoDeclined" : "Используйте WiFi на месте"
+        "geoDeclined" : "Используйте WiFi на месте",
+        "retry" : "Retry"
     }    
 }
 

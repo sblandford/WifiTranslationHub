@@ -90,39 +90,91 @@ def listenUuid(channel):
     log().debug("Started UUID Channel %d thread", channel)
     # Create the datagram socket for receiving channel
     ip_address = ipaddress.ip_address(config.MULTICAST_BASE_ADDR) + channel + config.MUTLICAST_UUID_OFFSET
+    group = socket.inet_aton(str(ip_address))
+    
+    mreq = struct.pack("4sL", group, socket.INADDR_ANY)
+    # If a specific IP is defined for this hub then listen on that
+    if len(config.HUB_ACCESS_IP_ADDRESS) > 0:
+        mreq = struct.pack('4s4s', socket.inet_aton(str(ip_address)), socket.inet_aton(config.HUB_ACCESS_IP_ADDRESS))
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    # If a specific interfcae is defined for this hub then listen on that
+    if len(config.HUB_ACCESS_INTERFACE) > 0:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BINDTODEVICE, config.HUB_ACCESS_INTERFACE.encode('utf-8'))
     if sys.platform == 'win32':
         sock.bind(("", config.MULTICAST_PORT))
     else:
         sock.bind((str(ip_address), config.MULTICAST_PORT))
-    group = socket.inet_aton(str(ip_address))
-    mreq = struct.pack("4sL", group, socket.INADDR_ANY)
     reported = False
     while not ended[channel]:
         try:
             sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
         except:
             if not reported:
-                log().error("IpBroadcast : %s", sys.exc_info()[0])
+                log().error("ClientUuid setup : %s", sys.exc_info()[0])
             reported = True
             time.sleep(config.SOCKET_RETRY_SECONDS)
             pass
         else:
             break
     sock.settimeout(config.SOCKET_TIMEOUT)
+    
+    # Set up second device listener if defined
+    if len(config.ip2) > 0:
+        mreq2 = struct.pack("4sL", group, socket.INADDR_ANY)
+        # If a specific IP is defined for this hub then listen on that
+        if len(config.HUB_ACCESS_IP_ADDRESS) > 0:
+            mreq2 = struct.pack('4s4s', socket.inet_aton(str(ip_address)), socket.inet_aton(config.ip2))          
+        sock2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        sock2.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock2.setsockopt(socket.SOL_SOCKET, socket.SO_BINDTODEVICE, config.HUB_ACCESS_INTERFACE2.encode('utf-8'))
+        if sys.platform == 'win32':
+            sock2.bind(("", config.MULTICAST_PORT))
+        else:
+            sock2.bind((str(ip_address), config.MULTICAST_PORT))
+        reported = False
+        while not ended[channel]:
+            try:
+                sock2.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq2)
+            except:
+                if not reported:
+                    log().error("ClientUuid2 setup on %s : %s", config.ip2, sys.exc_info()[0])
+                reported = True
+                time.sleep(config.SOCKET_RETRY_SECONDS)
+                pass
+            else:
+                break
+        sock2.settimeout(config.SOCKET_TIMEOUT)       
+    
     log().debug("Waiting for UUID multicast packets on channel %d, address %s", channel, str(ip_address))
+    sockOK = False
+    sock2OK = False
     while not ended[channel]:
         try:
-            try:
-                data, address = sock.recvfrom(config.MULTICAST_PACKET_BUFFER_SIZE)
-            except socket.timeout:
+            if sock2OK == False:
+                try:
+                    data, address = sock.recvfrom(config.MULTICAST_PACKET_BUFFER_SIZE)
+                except socket.timeout:
+                    sockOK = False
+                except:
+                    log().error("ClientUuidRx : %s", sys.exc_info()[0])
+                    time.sleep(config.SOCKET_RETRY_SECONDS)
+                    sockOK = False
+                else:
+                    sockOK = True
+            if sockOK == False and len(config.ip2):
+                try:
+                    data, address = sock2.recvfrom(config.MULTICAST_PACKET_BUFFER_SIZE)
+                except socket.timeout:
+                    sock2OK = False
+                except:
+                    log().error("ClientUuidRx2 : %s", sys.exc_info()[0])
+                    time.sleep(config.SOCKET_RETRY_SECONDS)
+                    sock2OK = False
+                else:
+                    sock2OK = True
+            if sockOK == False and sock2OK == False:
                 continue
-            except:
-                log().error("ClientUuidRx : %s", sys.exc_info()[0])
-                time.sleep(config.SOCKET_RETRY_SECONDS)
-                continue
-
             length = len(data)
             if length != (config.UUID_LENGTH + 2):
                 continue

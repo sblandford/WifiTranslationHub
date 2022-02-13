@@ -245,11 +245,15 @@ function updateDisplay() {
                 if (!chNameId.classList.contains('chNameDead')) {
                     chNameId.classList.add('chNameDead');
                 }
-                startStopButtonId.innerText = (gPlayIntention)?LANG[gLang]["stop"]:"Start";
+                startStopButtonId.innerText = LANG[gLang][(gPlayIntention)?"stop":"start"];
                 startStopButtonId.disabled = !gPlayIntention;
             }
             if (!gOnLan && !gGeoInRange && gOnLanValid && (gGeoLat || gGeoDeclined)) {
-                document.getElementById("stat").innerText = (gGeoDeclined)?LANG[gLang]["geoDeclined"]:LANG[gLang]["outRange"];
+                document.getElementById("stat").innerText = LANG[gLang][(gGeoDeclined)?"geoDeclined":"outRange"];
+                if (!gGeoDeclined) {
+                    startStopButtonId.innerText = LANG[gLang]["retry"];
+                    startStopButtonId.disabled = false;
+                }
             } else {
                 document.getElementById("stat").innerText = "";
             }
@@ -788,6 +792,12 @@ function ontouchendChannel(channel) {
 
 // The main start/stop button handler
 function clickEnact() {
+    //Check if retry pressed
+    var startStopButtonId = document.getElementById("startStopButton");
+    if (startStopButtonId.innerText == LANG[gLang]["retry"]) {
+        location.reload(true);
+    }
+
     dAudio = document.getElementById('dummyAudio');
     if (gPlayIntention) {
         gPlayIntention = false;
