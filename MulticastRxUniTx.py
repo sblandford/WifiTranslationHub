@@ -418,7 +418,7 @@ def reflectRTP(channel):
                     timeout = True
                 else:
                     sockOK = True
-            if sockOK == False:
+            if sockOK == False and len(config.ip2) > 0:
                 try:
                     data, address = sock2.recvfrom(config.MULTICAST_PACKET_BUFFER_SIZE)
                 except socket.timeout:
@@ -446,7 +446,7 @@ def reflectRTP(channel):
             seq = (data[2] << 8) + data[3]
             timeStamp = (data[4] << 24) + (data[5] << 16) + (data[6] << 8) + data[7]
 
-            if seq != (seqPrev + 1) and seq != 0 and seqPrev != 0xFFFF:
+            if seq != seqPrev and seq != (seqPrev + 1) and seq != 0 and seqPrev != 0xFFFF:
                 log().info("Missed packet from seq %d to %d on channel %s", seqPrev, seq, channel)
 
             if seq > seqPrev:

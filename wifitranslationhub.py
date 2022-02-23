@@ -138,7 +138,9 @@ def stopAll(signum, frame):
 def appData():
     # https://stackoverflow.com/questions/1084697/how-do-i-store-desktop-application-data-in-a-cross-platform-way-for-python
     APPNAME = os.path.basename(__file__)
-    if sys.platform == 'darwin':
+    if os.environ.get('IN_DOCKER', False):
+        appdata = ".config/" + APPNAME
+    elif sys.platform == 'darwin':
         from AppKit import NSSearchPathForDirectoriesInDomains
         # http://developer.apple.com/DOCUMENTATION/Cocoa/Reference/Foundation/Miscellaneous/Foundation_Functions/Reference/reference.html# //apple_ref/c/func/NSSearchPathForDirectoriesInDomains
         # NSApplicationSupportDirectory = 14

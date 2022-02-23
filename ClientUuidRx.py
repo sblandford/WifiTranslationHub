@@ -162,7 +162,7 @@ def listenUuid(channel):
                     sockOK = False
                 else:
                     sockOK = True
-            if sockOK == False and len(config.ip2):
+            if sockOK == False and len(config.ip2) > 0:
                 try:
                     data, address = sock2.recvfrom(config.MULTICAST_PACKET_BUFFER_SIZE)
                 except socket.timeout:

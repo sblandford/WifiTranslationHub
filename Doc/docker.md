@@ -1,6 +1,6 @@
 ### Building and using the Docker
 
-docker build --tag wifitranslationhub .
+docker build --tag wifitranslationhub .\
 docker run --net=host --name wifitranslationhub wifitranslationhub
 
 #### Use config file on host
