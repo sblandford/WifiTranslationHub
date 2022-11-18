@@ -1,7 +1,11 @@
 # WifiTranslationHub
 Hub written in Python 3.5+ for the Wifi Translation Android app to enable management and unicast web-player fallback
 
-Intended for use with the WifiTranslation Android app https://github.com/sblandford/WifiTranslation.
+Source code : https://github.com/sblandford/WifiTranslationHub
+
+Intended for use with the WifiTranslation Android app : https://github.com/sblandford/WifiTranslation
+
+I have sinced written a new WiFi translation application based on WebRTC that runs on mobile device web browsers : https://github.com/sblandford/wifi-xlation
 
 ### What it is for
 
